@@ -7,6 +7,7 @@
 
 import chess
 from chess import svg
+from chess import pgn
 import random
 
 class ChessPlayer:
@@ -20,14 +21,22 @@ class ChessPlayer:
 
 	def RandomPlayer(self):
 		board = self.board
+		#game_moves = []
 
 		while not self.GameOver():
 			legal_moves = list(board.legal_moves)
 			rand_move = random.randint(0, len(legal_moves) - 1)
+			#game_moves.append(legal_moves[rand_move])
 			board.push(legal_moves[rand_move])
 
-		self.file.write(chess.svg.board(board = self.board))
+		game = chess.pgn.Game.from_board(self.board)
+		print game
+		self.file.write(chess.svg.board(board=self.board))
 		self.file.close()
+
+#class ClassificationPlayer(ChessPlayer):
+#	def move(self):
+
 
 cp = ChessPlayer()
 cp.RandomPlayer()
