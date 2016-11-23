@@ -29,14 +29,39 @@ class ChessPlayer:
 
 	# move is a chess.Move object
 	def MoveValue(self, move):
-		target = move.to_square()
+		target = move.to_square
 		piece = self.board.piece_at(target)
 		
 		if piece:
 			# piece could be upper or lower case
-			return self.values[piece.upper()]
+			return self.values[str(piece).upper()]
 
 		return 0
+
+	def RandomMove(self, legal_moves):
+		rand_move = random.randint(0, len(legal_moves) - 1)
+
+		return legal_moves[rand_move]
+
+	def GreedyMove(self, legal_moves):
+		
+		# best_move = (move, value)
+		best_move = (None, -float('inf'))
+
+		for move in legal_moves:
+			value = self.MoveValue(move)
+			if value > best_move[1]:
+				best_move = (move, value)
+
+		# If we can't take anything, return random move
+		if best_move[1] == 0:
+			return self.RandomMove(legal_moves)
+		
+		return best_move[0]
+
+	def Write(self):
+		self.file.write(chess.svg.board(board = self.board))
+		self.file.close()
 
 	"""
 	RandomPlayer plays a random legal move at each step until
@@ -47,11 +72,20 @@ class ChessPlayer:
 
 		while not self.GameOver():
 			legal_moves = list(board.legal_moves)
-			rand_move = random.randint(0, len(legal_moves) - 1)
-			board.push(legal_moves[rand_move])
+			move = self.RandomMove(legal_moves)
+			board.push(move)
 
-		self.file.write(chess.svg.board(board = self.board))
-		self.file.close()
+		self.Write()
+
+	def GreedyPlayer(self):
+		board = self.board
+
+		while not self.GameOver():
+			legal_moves = list(board.legal_moves)
+			move = self.GreedyMove(legal_moves)
+			board.push(move)
+
+		self.Write()
 
 cp = ChessPlayer()
-cp.RandomPlayer()
+cp.GreedyPlayer()
