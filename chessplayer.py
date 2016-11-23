@@ -7,14 +7,27 @@
 
 import chess
 from chess import svg
+import random
 
-f = open('out.svg', 'w')
+class ChessPlayer:
 
-board = chess.Board()
+	def __init__(self):
+		self.file = open('out.svg', 'w')
+		self.board = chess.Board()
 
-board.push_san("e4")
-board.push_san("e5")
+	def GameOver(self):
+		return self.board.is_game_over()
 
-f.write(chess.svg.board(board = board))
+	def RandomPlayer(self):
+		board = self.board
 
-f.close()
+		while not self.GameOver():
+			legal_moves = list(board.legal_moves)
+			rand_move = random.randint(0, len(legal_moves) - 1)
+			board.push(legal_moves[rand_move])
+
+		self.file.write(chess.svg.board(board = self.board))
+		self.file.close()
+
+cp = ChessPlayer()
+cp.RandomPlayer()
