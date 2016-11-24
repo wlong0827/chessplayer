@@ -8,6 +8,14 @@
 import chess
 from chess import svg
 import random
+import time
+import sys
+
+class Tree:
+    def __init__(self, cargo, left=None, right=None):
+        self.cargo = cargo
+        self.left  = left
+        self.right = right
 
 class ChessPlayer:
 	"""
@@ -61,6 +69,8 @@ class ChessPlayer:
 
 	def Write(self):
 		self.file.write(chess.svg.board(board = self.board))
+	
+	def Close(self):	
 		self.file.close()
 
 	"""
@@ -75,7 +85,9 @@ class ChessPlayer:
 			move = self.RandomMove(legal_moves)
 			board.push(move)
 
+		print board.result()
 		self.Write()
+		self.Close()
 
 	def GreedyPlayer(self):
 		board = self.board
@@ -85,7 +97,41 @@ class ChessPlayer:
 			move = self.GreedyMove(legal_moves)
 			board.push(move)
 
+		print board.result()
+		self.Write()
+		self.Close()
+
+	def RandomvsGreedy(self):
+		board = self.board
+
+		while not self.GameOver():
+			legal_moves = list(board.legal_moves)
+
+			if not board.turn:
+				move = self.RandomMove(legal_moves)
+				board.push(move)
+			else:
+				move = self.GreedyMove(legal_moves)
+				board.push(move)
+
+			print board
+
+			time.sleep(1)
+
+		print board.result()
+		self.Write()
+		self.Close()
+
+	def MinimaxPlayer(self, depth):
+		board = self.board
+
+		while not self.GameOver():
+			legal_moves = list(board.legal_moves)
+			move = self.GreedyMove(legal_moves)
+			board.push(move)
+
+		print board.result()
 		self.Write()
 
 cp = ChessPlayer()
-cp.GreedyPlayer()
+cp.RandomvsGreedy()
