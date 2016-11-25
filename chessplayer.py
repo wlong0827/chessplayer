@@ -157,6 +157,16 @@ class MinimaxPlayer(ChessPlayer):
 		else:
 			return self.minMove(depth, player, board)
 
+class HumanPlayer(ChessPlayer):
+
+	def move(self, legal_moves):
+		move = raw_input("Input your move\n")
+		formatted_move = chess.Move.from_uci(str(move))
+
+		while formatted_move not in legal_moves:
+			move = raw_input("Incorrect input. Try again\n")
+
+		return formatted_move
 
 #class ClassificationPlayer(ChessPlayer):
 #   def move(self):
@@ -166,6 +176,7 @@ def PlayAgents(Player1, Player2):
 
 	while not Player1.isGameOver():
 		legal_moves = list(board.legal_moves)
+		print board + "\n"
 
 		if not board.turn:
 			move = Player1.move(legal_moves)
@@ -184,10 +195,11 @@ def PlayAgents(Player1, Player2):
 -------------- Test Code -------------------------
 """
 # rp = RandomPlayer('out.svg')
-# gp = GreedyPlayer('out.svg')
-# PlayAgents(rp, gp)
-mp = MinimaxPlayer('out.svg')
-mp.move(mp.board)
+gp = GreedyPlayer('out.svg')
+hp = HumanPlayer('out.svg')
+PlayAgents(gp, hp)
+# mp = MinimaxPlayer('out.svg')
+# mp.move(mp.board)
 
 # rp = RandomPlayer('random.svg')
 # rp.play()
