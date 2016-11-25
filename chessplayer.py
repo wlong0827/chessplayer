@@ -18,7 +18,7 @@ class Tree:
         self.children = []
 
     def addChild(self, cargo):
-    	self.children.append(cargo)
+        self.children.append(cargo)
 
 class ChessPlayer:
     """
@@ -48,7 +48,7 @@ class ChessPlayer:
         return 0
 
     # overwritten by engines
-    def move(self):
+    def move(self, board):
         pass
 
     def write(self, file):
@@ -59,8 +59,7 @@ class ChessPlayer:
         board = self.board
 
         while not self.isGameOver():
-            legal_moves = list(board.legal_moves)
-            move = self.move(legal_moves)
+            move = self.move(board)
             board.push(move)
 
         self.game = chess.pgn.Game.from_board(self.board)
@@ -76,7 +75,8 @@ class ChessPlayer:
 """
 class RandomPlayer(ChessPlayer):
 
-    def move(self, legal_moves):
+    def move(self, board):
+        legal_moves = list(board.legal_moves)
         return legal_moves[random.randint(0, len(legal_moves) - 1)]
 
 
@@ -89,8 +89,9 @@ class GreedyPlayer(ChessPlayer):
         # I can't seem to find a piece value dict so I wrote one
         self.values = {'P': 1, 'R': 5, 'N': 3, 'B': 3, 'Q': 9, 'K': 5}
 
-    def move(self, legal_moves):   
+    def move(self, board):   
         # best_move = (move, value)
+        legal_moves = list(board.legal_moves)
         best_move = (None, -float('inf'))
 
         for move in legal_moves:
@@ -106,95 +107,102 @@ class GreedyPlayer(ChessPlayer):
 
 class MinimaxPlayer(ChessPlayer):
 
-	def __init__(self, outfile):
-		self.file = open(outfile, 'w')
-		self.board = chess.Board()
-		self.values = {'P': 1, 'R': 5, 'N': 3, 'B': 3, 'Q': 9, 'K': 1000}
-		self.tree = Tree(self.board)
-		self.calculations = 0
+    def __init__(self, outfile):
+        self.file = open(outfile, 'w')
+        self.board = chess.Board()
+        self.values = {'P': 1, 'R': 5, 'N': 3, 'B': 3, 'Q': 9, 'K': 1000}
+        self.tree = Tree(self.board)
+        self.calculations = 0    
 
-	def boardValue(self, board):
-		value = 0
-		for square in range(64):
-			piece = board.piece_at(square)
-			if piece:
-				p = str(piece)
-				
-				if p.isupper():
-					value += self.values[p]
-				else:
-					value -= self.values[p.upper()]
-		return value
+    def boardValue(self, board):
+        value = 0
+        for square in range(64):
+            piece = board.piece_at(square)
+            if piece:
+                p = piece.symbol()
+                if p.isupper():
+                    value += self.values[p]
+                    print value
+                else:
+                    value -= self.values[p.upper()]
+                    print value
+        # if value != 0:
+        #     print "VALUEEEE"
+        return value
 
-	def maxMove(self, depth, player, board):
-		legal_moves = list(board.legal_moves)
-		value = -float('inf')
-		print len(legal_moves)
-		for move in legal_moves:
-			board_copy = board.copy()
-			self.calculations += 1
-			board_copy.push(move)
-    		value = max(value, self.move(board_copy, depth - 1, player))
-		return value
+    def maxMove(self, board, depth, player):
+        legal_moves = list(board.legal_moves)
+        value = -float('inf')
+        print len(legal_moves)
+        for move in legal_moves:
+            board_copy = board.copy()
+            self.calculations += 1
+            board_copy.push(move)
+            value = max(value, self.move(board_copy, depth - 1, player))
+        return value
 
-	def minMove(self, depth, player, board):
-		legal_moves = list(board.legal_moves)
-		print len(legal_moves)
-		value = float('inf')
-		for move in legal_moves:
-			board_copy = board.copy()
-			self.calculations += 1
-			board_copy.push(move)
-    		value = min(value, self.move(board_copy, depth - 1, player))
-		return value
+    def minMove(self, board, depth, player):
+        legal_moves = list(board.legal_moves)
+        print len(legal_moves)
+        value = float('inf')
+        for move in legal_moves:
+            board_copy = board.copy()
+            self.calculations += 1
+            board_copy.push(move)
+            value = min(value, self.move(board_copy, depth - 1, player))
+        return value
 
-	def move(self, board, depth = 5, player = True):
-		print board
-		if depth == 0 or self.isGameOver():
-			value = self.boardValue(board)
-			board.pop()
-			print "value", value
-			print "boards", self.calculations
-			return value
-		if board.turn == player: 
-			return self.maxMove(depth, player, board)
-		else:
-			return self.minMove(depth, player, board)
+    def move(self, board, depth=4, player=chess.WHITE):
+        print board
+        if depth == 0 or self.isGameOver():
+            value = self.boardValue(board)
+            board.pop()
+            print "value", value
+            print "boards", self.calculations
+            return value
+        if board.turn == player: 
+            return self.maxMove(board, depth, player)
+        else:
+            return self.minMove(board, depth, player)
 
 class HumanPlayer(ChessPlayer):
 
-	def move(self, legal_moves):
-		move = raw_input("Input your move\n")
-		formatted_move = self.board.parse_san(str(move))
+    def move(self, board):
+        legal_moves = list(board.legal_moves)
+        move = raw_input("Input your move\n")
+        formatted_move = self.board.parse_san(str(move))
 
-		while formatted_move not in legal_moves:
-			move = raw_input("Incorrect input. Try again\n")
+        while formatted_move not in legal_moves:
+            move = raw_input("Incorrect input. Try again\n")
 
-		return formatted_move
+        return formatted_move
 
 #class ClassificationPlayer(ChessPlayer):
 #   def move(self):
 
-def PlayAgents(Player1, Player2):
-	board = Player1.board
+"""
+    PlayAgents(Player1, Player2)
+    Plays a game of chess, with Player1 (white) vs. Player2 (black)
+"""
+def PlayAgents(BlackPlayer, WhitePlayer):
+    board = BlackPlayer.board
 
-	while not Player1.isGameOver():
-		legal_moves = list(board.legal_moves)
-		print board
-		print "\n"
+    while not BlackPlayer.isGameOver():
+        print board
+        print "\n"
 
-		if not board.turn:
-			move = Player1.move(legal_moves)
-			board.push(move)
-		else:
-			move = Player2.move(legal_moves)
-			board.push(move)
+        if board.turn == chess.BLACK:
+            move = BlackPlayer.move(board)
+            board.push(move)
+        else:
+            move = WhitePlayer.move(board)
+            board.push(move)
 
-		#print board
-		#time.sleep(1)
+        #print board
+        #time.sleep(1)
 
-	print board.result()
-	Player1.write('out.svg')
+    print board.result()
+    BlackPlayer.write('out.svg')
 
 """
 -------------- Test Code -------------------------
