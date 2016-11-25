@@ -111,6 +111,7 @@ class MinimaxPlayer(ChessPlayer):
 		self.board = chess.Board()
 		self.values = {'P': 1, 'R': 5, 'N': 3, 'B': 3, 'Q': 9, 'K': 1000}
 		self.tree = Tree(self.board)
+		self.calculations = 0
 
 	def boardValue(self, board):
 		value = 0
@@ -126,31 +127,34 @@ class MinimaxPlayer(ChessPlayer):
 		return value
 
 	def maxMove(self, depth, player, board):
-		print "max called"
 		legal_moves = list(board.legal_moves)
 		value = -float('inf')
+		print len(legal_moves)
 		for move in legal_moves:
 			board_copy = board.copy()
+			self.calculations += 1
 			board_copy.push(move)
-    		value = max(value, self.move(board_copy, depth-1, player))
+    		value = max(value, self.move(board_copy, depth - 1, player))
 		return value
 
 	def minMove(self, depth, player, board):
-		print "min called"
 		legal_moves = list(board.legal_moves)
+		print len(legal_moves)
 		value = float('inf')
 		for move in legal_moves:
 			board_copy = board.copy()
+			self.calculations += 1
 			board_copy.push(move)
-    		value = min(value, self.move(board_copy, depth-1, player))
+    		value = min(value, self.move(board_copy, depth - 1, player))
 		return value
 
-	def move(self, board, depth = 15, player = True):
+	def move(self, board, depth = 5, player = True):
 		print board
 		if depth == 0 or self.isGameOver():
 			value = self.boardValue(board)
 			board.pop()
 			print "value", value
+			print "boards", self.calculations
 			return value
 		if board.turn == player: 
 			return self.maxMove(depth, player, board)
@@ -161,7 +165,7 @@ class HumanPlayer(ChessPlayer):
 
 	def move(self, legal_moves):
 		move = raw_input("Input your move\n")
-		formatted_move = chess.Move.from_uci(str(move))
+		formatted_move = self.board.parse_san(str(move))
 
 		while formatted_move not in legal_moves:
 			move = raw_input("Incorrect input. Try again\n")
@@ -176,7 +180,8 @@ def PlayAgents(Player1, Player2):
 
 	while not Player1.isGameOver():
 		legal_moves = list(board.legal_moves)
-		print board + "\n"
+		print board
+		print "\n"
 
 		if not board.turn:
 			move = Player1.move(legal_moves)
@@ -195,11 +200,11 @@ def PlayAgents(Player1, Player2):
 -------------- Test Code -------------------------
 """
 # rp = RandomPlayer('out.svg')
-gp = GreedyPlayer('out.svg')
-hp = HumanPlayer('out.svg')
-PlayAgents(gp, hp)
-# mp = MinimaxPlayer('out.svg')
-# mp.move(mp.board)
+# gp = GreedyPlayer('out.svg')
+# hp = HumanPlayer('out.svg')
+# PlayAgents(gp, hp)
+mp = MinimaxPlayer('out.svg')
+mp.move(mp.board)
 
 # rp = RandomPlayer('random.svg')
 # rp.play()
