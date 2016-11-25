@@ -13,10 +13,12 @@ from subprocess import call
 import time
 
 class Tree:
-    def __init__(self, cargo, left=None, right=None):
+    def __init__(self, cargo):
         self.cargo = cargo
-        self.left  = left
-        self.right = right
+        self.children = []
+
+    def addChild(self, cargo):
+    	self.children.append(cargo)
 
 class ChessPlayer:
     """
@@ -79,6 +81,7 @@ class RandomPlayer(ChessPlayer):
 
 
 class GreedyPlayer(ChessPlayer):
+
     def __init__(self, outfile):
         self.file = open(outfile, 'w')
         self.board = chess.Board()
@@ -101,6 +104,63 @@ class GreedyPlayer(ChessPlayer):
         
         return best_move[0]
 
+class MinimaxPlayer(ChessPlayer):
+
+	def __init__(self, outfile):
+		self.file = open(outfile, 'w')
+		self.board = chess.Board()
+		self.values = {'P': 1, 'R': 5, 'N': 3, 'B': 3, 'Q': 9, 'K': 1000}
+		self.tree = Tree(self.board)
+
+	def boardValue(self, board):
+		value = 0
+		for square in range(64):
+			piece = board.piece_at(square)
+			if piece:
+				p = str(piece)
+				
+				if p.isupper():
+					value += self.values[p]
+				else:
+					value -= self.values[p.upper()]
+		return value
+
+	def maxMove(self, depth, player, board):
+		print "max called"
+		legal_moves = list(board.legal_moves)
+		value = -float('inf')
+		for move in legal_moves:
+			board_copy = board.copy()
+			board_copy.push(move)
+    		value = max(value, self.move(board_copy, depth-1, player))
+		return value
+
+	def minMove(self, depth, player, board):
+		print "min called"
+		legal_moves = list(board.legal_moves)
+		value = float('inf')
+		for move in legal_moves:
+			board_copy = board.copy()
+			board_copy.push(move)
+    		value = min(value, self.move(board_copy, depth-1, player))
+		return value
+
+	def move(self, board, depth = 15, player = True):
+		print board
+		if depth == 0 or self.isGameOver():
+			value = self.boardValue(board)
+			board.pop()
+			print "value", value
+			return value
+		if board.turn == player: 
+			return self.maxMove(depth, player, board)
+		else:
+			return self.minMove(depth, player, board)
+
+
+#class ClassificationPlayer(ChessPlayer):
+#   def move(self):
+
 def PlayAgents(Player1, Player2):
 	board = Player1.board
 
@@ -120,23 +180,14 @@ def PlayAgents(Player1, Player2):
 	print board.result()
 	Player1.write('out.svg')
 
-rp = RandomPlayer('out.svg')
-gp = GreedyPlayer('out.svg')
-PlayAgents(rp, gp)
-# def MinimaxPlayer(self, depth):
-# 	board = self.board
-
-# 	while not self.GameOver():
-# 		legal_moves = list(board.legal_moves)
-# 		move = self.GreedyMove(legal_moves)
-# 		board.push(move)
-
-# 	print board.result()
-# 	self.Write()
-
-#class ClassificationPlayer(ChessPlayer):
-#   def move(self):
-
+"""
+-------------- Test Code -------------------------
+"""
+# rp = RandomPlayer('out.svg')
+# gp = GreedyPlayer('out.svg')
+# PlayAgents(rp, gp)
+mp = MinimaxPlayer('out.svg')
+mp.move(mp.board)
 
 # rp = RandomPlayer('random.svg')
 # rp.play()
