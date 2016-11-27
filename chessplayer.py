@@ -12,6 +12,7 @@ from chess import polyglot
 import random
 from subprocess import call
 import time
+import os
 
 class ChessPlayer:
     """
@@ -30,7 +31,10 @@ class ChessPlayer:
 
     def initOpeningBook(self, book="Formula12"):
         path = "opening_books/" + book + ".bin"
-        self.reader = chess.polyglot.open_reader(path)
+        if os.path.isfile(path):
+            self.reader = chess.polyglot.open_reader(path)
+        else:
+            self.reader = None
 
     def isGameOver(self, board):
         return board.is_game_over()
@@ -119,7 +123,7 @@ class MinimaxPlayer(ChessPlayer):
         self.calculations = 0
         # start at 0 if white, 1 if black
         self.half_moves = int(not player)
-        if book == "":
+        if book == "" or book = None or book == False:
             self.reader = None
         elif book == True:
             self.initOpeningBook()
