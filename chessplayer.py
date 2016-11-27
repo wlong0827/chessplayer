@@ -13,6 +13,24 @@ import random
 from subprocess import call
 import time
 import os
+import sys
+
+def startProgress(title):
+    global progress_x
+    sys.stdout.write(title + ": [" + "-"*40 + "]" + chr(8)*41)
+    sys.stdout.flush()
+    progress_x = 0
+
+def progress(x):
+    global progress_x
+    x = int(x * 40 // 100)
+    sys.stdout.write("#" * (x - progress_x))
+    sys.stdout.flush()
+    progress_x = x
+
+def endProgress():
+    sys.stdout.write("#" * (40 - progress_x) + "]\n")
+    sys.stdout.flush()
 
 class ChessPlayer:
     """
@@ -54,7 +72,7 @@ class ChessPlayer:
     def move(self, board):
         pass
 
-    def write(self, file, chessboard):
+    def writeBoard(self, file, chessboard):
     	f = open(file, 'w')
         f.write(chess.svg.board(board = chessboard))
         f.close()
@@ -68,7 +86,7 @@ class ChessPlayer:
 
         self.game = chess.pgn.Game.from_board(self.board)
 
-        self.write(self.file)
+        self.writeBoard(self.file)
 
     def printGame(self):
         print self.game
@@ -153,7 +171,7 @@ class MinimaxPlayer(ChessPlayer):
         # print len(legal_moves)
         for move in legal_moves:
             board_copy = board.copy()
-            self.calculations += 1
+            #self.calculations += 1
             board_copy.push(move)
             #value = max(value, self.move(board_copy, depth - 1, player))
             new_value = self.value(board_copy, depth - 1, player)
@@ -168,7 +186,7 @@ class MinimaxPlayer(ChessPlayer):
         value = (float('inf'), None)
         for move in legal_moves:
             board_copy = board.copy()
-            self.calculations += 1
+            #self.calculations += 1
             board_copy.push(move)
             # value = min(value, self.move(board_copy, depth - 1, player))
             new_value = self.value(board_copy, depth - 1, player)
@@ -180,6 +198,7 @@ class MinimaxPlayer(ChessPlayer):
     def value(self, board, depth, player):
         if depth == 0 or self.isGameOver(board):
             value = self.boardValue(board)
+            self.calculations += 1
             return (value, board.move_stack)
         if board.turn == player: 
         	#print "asking max"
@@ -203,9 +222,10 @@ class MinimaxPlayer(ChessPlayer):
                 return book_entry.move()
     	value, moves = self.value(board, depth, player)
     	move = moves[self.half_moves]
-    	print moves
-    	print move
+    	#print moves
+    	#print move
     	print "final value", value
+    	print "calcs", self.calculations
     	self.half_moves += 2
     	return move
 
@@ -251,9 +271,11 @@ def PlayAgents(BlackPlayer, WhitePlayer):
     board = BlackPlayer.board
 
     while not BlackPlayer.isGameOver(board):
-    	BlackPlayer.write('out.svg', board)
+    	BlackPlayer.writeBoard('out.svg', board)
         print board
         print "\n"
+
+        # Update both Players' boards
         BlackPlayer.board = board
         WhitePlayer.board = board
 
@@ -279,12 +301,12 @@ We should probably put this in a new file, eventually.
 Sorry for the merge conflicts here!
 """
 # rp = RandomPlayer('out.svg')
-gp = GreedyPlayer('out.svg')
+# gp = GreedyPlayer('out.svg')
 hp = HumanPlayer('out.svg')
 # mp2 = MinimaxPlayer('out2.svg', player=chess.WHITE, book="Formula12")
-# mp = MinimaxPlayer('out.svg', player=chess.BLACK, book="gm2600")
+mp = MinimaxPlayer('out.svg', player=chess.BLACK, book="gm2600")
 
-#PlayAgents(mp, hp)
+PlayAgents(mp, hp)
 #PlayAgents(mp, mp2)
 
 # mp.move()
