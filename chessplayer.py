@@ -8,6 +8,7 @@
 import chess
 from chess import svg
 from chess import pgn
+from chess import polyglot
 import random
 from subprocess import call
 import time
@@ -25,6 +26,9 @@ class ChessPlayer:
         self.board = chess.Board()
         self.game = chess.pgn.Game()
         self.half_moves = 0
+
+    def initOpeningBook(self, book="opening_book/Formula12.bin"):
+        self.reader = chess.polyglot.open_reader(book)
 
     def isGameOver(self, board):
         return board.is_game_over()
@@ -65,6 +69,8 @@ class ChessPlayer:
 
     def exit(self):
         close(self.file)
+        if self.reader:
+            self.reader.close()
 
 """
     RandomPlayer plays a random legal move at each step until
@@ -104,13 +110,15 @@ class GreedyPlayer(ChessPlayer):
 
 class MinimaxPlayer(ChessPlayer):
 
-    def __init__(self, outfile, player = chess.WHITE):
+    def __init__(self, outfile, player=chess.WHITE, use_book=False):
         self.file = open(outfile, 'w')
         self.board = chess.Board()
         self.values = {'P': 1, 'R': 5, 'N': 3, 'B': 3, 'Q': 9, 'K': 1000}
         self.calculations = 0
         # start at 0 if white, 1 if black
         self.half_moves = int(not player)  
+        if use_book:
+            self.initOpeningBook()
 
     def boardValue(self, board):
         value = 0
@@ -170,7 +178,16 @@ class MinimaxPlayer(ChessPlayer):
         	#print "asking min"
         	return self.minMove(board, depth, player)
 
-    def move(self, board, depth = 3, player = chess.WHITE):
+    def move(self, board, depth=3, player=chess.WHITE):
+        # use opening book if we can
+        if self.reader:
+            book_entry = None
+            try:
+                book_entry = self.reader.weighted_choice(board)
+            except IndexError:
+                book_entry = None
+            if book_entry and book_entry.weight > 5:
+                return book_entry.move()
     	value, moves = self.value(board, depth, player)
     	move = moves[self.half_moves]
     	print moves
@@ -249,16 +266,9 @@ def PlayAgents(BlackPlayer, WhitePlayer):
 # rp = RandomPlayer('out.svg')
 gp = GreedyPlayer('out.svg')
 hp = HumanPlayer('out.svg')
-<<<<<<< HEAD
-mp1 = MinimaxPlayer('out.svg', chess.BLACK)
-mp2 = MinimaxPlayer('out.svg', chess.WHITE)
-
-PlayAgents(mp1, mp2)
-=======
 mp = MinimaxPlayer('out.svg', chess.WHITE)
 
 PlayAgents(hp, mp)
->>>>>>> c6eaa389944a938fbcec70cdb3982d610176d6ab
 
 # mp.move()
 
