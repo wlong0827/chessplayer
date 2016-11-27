@@ -141,6 +141,7 @@ class MinimaxPlayer(ChessPlayer):
             new_value = self.value(board_copy, depth - 1, player)
             if new_value[0] > value[0]:
             	value = new_value
+        #print "max value", value[0]
         return value
 
     def minMove(self, board, depth, player):
@@ -155,6 +156,7 @@ class MinimaxPlayer(ChessPlayer):
             new_value = self.value(board_copy, depth - 1, player)
             if new_value[0] < value[0]:
             	value = new_value
+        #print "min value", value[0]
         return value
 
     def value(self, board, depth, player):
@@ -162,13 +164,18 @@ class MinimaxPlayer(ChessPlayer):
             value = self.boardValue(board)
             return (value, board.move_stack)
         if board.turn == player: 
-            return self.maxMove(board, depth, player)
+        	#print "asking max"
+        	return self.maxMove(board, depth, player)
         else:
-            return self.minMove(board, depth, player)
+        	#print "asking min"
+        	return self.minMove(board, depth, player)
 
-    def move(self, board, depth = 5, player = chess.BLACK):
-    	value, moves = self.value(board, depth, board.turn)
+    def move(self, board, depth = 3, player = chess.WHITE):
+    	value, moves = self.value(board, depth, player)
     	move = moves[self.half_moves]
+    	print moves
+    	print move
+    	print "final value", value
     	self.half_moves += 2
     	return move
 
@@ -240,12 +247,18 @@ def PlayAgents(BlackPlayer, WhitePlayer):
 -------------- Test Code -------------------------
 """
 # rp = RandomPlayer('out.svg')
-# gp = GreedyPlayer('out.svg')
+gp = GreedyPlayer('out.svg')
 hp = HumanPlayer('out.svg')
+<<<<<<< HEAD
 mp1 = MinimaxPlayer('out.svg', chess.BLACK)
 mp2 = MinimaxPlayer('out.svg', chess.WHITE)
 
 PlayAgents(mp1, mp2)
+=======
+mp = MinimaxPlayer('out.svg', chess.WHITE)
+
+PlayAgents(hp, mp)
+>>>>>>> c6eaa389944a938fbcec70cdb3982d610176d6ab
 
 # mp.move()
 
