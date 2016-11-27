@@ -165,6 +165,15 @@ class MinimaxPlayer(ChessPlayer):
         else:
             return self.minMove(board, depth, player)
 
+class ReinforcementLearningPlayer(ChessPlayer):
+    def __init__(self):
+        self.file = open(outfile, 'w')
+        self.board = chess.Board()
+
+    def init_Zobrist(self):
+        # fill a table of random bitstrings (used in hashing)
+
+
 class HumanPlayer(ChessPlayer):
 
     def move(self, board):
