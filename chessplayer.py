@@ -63,6 +63,9 @@ class ChessPlayer:
     def printGame(self):
         print self.game
 
+    def exit(self):
+        close(self.file)
+
 """
     RandomPlayer plays a random legal move at each step until
     the game is over, then writes the final position to self.file
@@ -101,7 +104,7 @@ class GreedyPlayer(ChessPlayer):
 
 class MinimaxPlayer(ChessPlayer):
 
-    def __init__(self, outfile, player):
+    def __init__(self, outfile, player = chess.WHITE):
         self.file = open(outfile, 'w')
         self.board = chess.Board()
         self.values = {'P': 1, 'R': 5, 'N': 3, 'B': 3, 'Q': 9, 'K': 1000}
@@ -163,7 +166,7 @@ class MinimaxPlayer(ChessPlayer):
         else:
             return self.minMove(board, depth, player)
 
-    def move(self, board, depth = 3, player = chess.BLACK):
+    def move(self, board, depth = 5, player = chess.BLACK):
     	value, moves = self.value(board, depth, board.turn)
     	move = moves[self.half_moves]
     	self.half_moves += 2
@@ -174,32 +177,33 @@ class ReinforcementLearningPlayer(ChessPlayer):
         self.file = open(outfile, 'w')
         self.board = chess.Board()
 
-    def init_Zobrist(self):
-        # fill a table of random bitstrings (used in hashing)
-        pass
-
 class HumanPlayer(ChessPlayer):
 
     def move(self, board):
         legal_moves = list(board.legal_moves)
-      	options = {}
-      	options_str = "Choose an option: "
+      	moves_str = "Choose a move: "
         for i, move in enumerate(legal_moves):
-        	options[i] = move
-        	options_str += "(" + str(i) + "): " + str(move) + " "
-        print options_str + "\n"
+            if i == len(legal_moves) - 1:
+                moves_str += "{}.".format(move)
+            else:
+                moves_str += "{}, ".format(move)
+        print moves_str + "\n"
         
-        index = raw_input("Input your move:\n")
+        inp = raw_input("Input your move:\n")
 
-        while not int(index) in options.keys():
-            index = raw_input("Incorrect input. Try again\n")
+        while True:
+            try:
+                move = chess.Move.from_uci(inp)
+            except ValueError:
+                inp = raw_input("Invalid input. Try again.\n")
+                continue
+            if move not in legal_moves:
+                inp = raw_input("Illegal move. Try again.\n")
+            else:
+                break
 
-        move = options[int(index)]
-        print move
         return move
 
-#class ClassificationPlayer(ChessPlayer):
-#   def move(self):
 
 """
     PlayAgents(Player1, Player2)
@@ -218,16 +222,19 @@ def PlayAgents(BlackPlayer, WhitePlayer):
 
         if board.turn == chess.BLACK:
             move = BlackPlayer.move(board)
+            print "Black's move: {}".format(move)
             board.push(move)
         else:
             move = WhitePlayer.move(board)
+            print "White's move: {}".format(move)
             board.push(move)
 
         #print board
         #time.sleep(1)
 
     print board.result()
-    BlackPlayer.close('out.svg')
+    BlackPlayer.exit()
+    WhitePlayer.exit()
 
 """
 -------------- Test Code -------------------------
@@ -235,9 +242,10 @@ def PlayAgents(BlackPlayer, WhitePlayer):
 # rp = RandomPlayer('out.svg')
 # gp = GreedyPlayer('out.svg')
 hp = HumanPlayer('out.svg')
-mp = MinimaxPlayer('out.svg', chess.BLACK)
+mp1 = MinimaxPlayer('out.svg', chess.BLACK)
+mp2 = MinimaxPlayer('out.svg', chess.WHITE)
 
-PlayAgents(mp, hp)
+PlayAgents(mp1, mp2)
 
 # mp.move()
 
