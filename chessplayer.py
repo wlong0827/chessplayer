@@ -25,10 +25,12 @@ class ChessPlayer:
         self.file = open(outfile, 'w')
         self.board = chess.Board()
         self.game = chess.pgn.Game()
+        self.reader = None
         self.half_moves = 0
 
-    def initOpeningBook(self, book="opening_book/Formula12.bin"):
-        self.reader = chess.polyglot.open_reader(book)
+    def initOpeningBook(self, book="Formula12"):
+        path = "opening_books/" + book + ".bin"
+        self.reader = chess.polyglot.open_reader(path)
 
     def isGameOver(self, board):
         return board.is_game_over()
@@ -110,15 +112,19 @@ class GreedyPlayer(ChessPlayer):
 
 class MinimaxPlayer(ChessPlayer):
 
-    def __init__(self, outfile, player=chess.WHITE, use_book=False):
+    def __init__(self, outfile, player=chess.WHITE, book=""):
         self.file = open(outfile, 'w')
         self.board = chess.Board()
         self.values = {'P': 1, 'R': 5, 'N': 3, 'B': 3, 'Q': 9, 'K': 1000}
         self.calculations = 0
         # start at 0 if white, 1 if black
-        self.half_moves = int(not player)  
-        if use_book:
+        self.half_moves = int(not player)
+        if book == "":
+            self.reader = None
+        elif book == True:
             self.initOpeningBook()
+        else:
+            self.initOpeningBook(book)
 
     def boardValue(self, board):
         value = 0
@@ -184,9 +190,12 @@ class MinimaxPlayer(ChessPlayer):
             book_entry = None
             try:
                 book_entry = self.reader.weighted_choice(board)
+                #book_entry = self.reader.find(board)
             except IndexError:
                 book_entry = None
-            if book_entry and book_entry.weight > 5:
+            if book_entry != None and book_entry.weight > 5:
+                print "used book"
+                self.half_moves += 2
                 return book_entry.move()
     	value, moves = self.value(board, depth, player)
     	move = moves[self.half_moves]
@@ -262,22 +271,20 @@ def PlayAgents(BlackPlayer, WhitePlayer):
 
 """
 -------------- Test Code -------------------------
+We should probably put this in a new file, eventually.
+Sorry for the merge conflicts here!
 """
 # rp = RandomPlayer('out.svg')
 gp = GreedyPlayer('out.svg')
 hp = HumanPlayer('out.svg')
-mp = MinimaxPlayer('out.svg', chess.WHITE)
+# mp2 = MinimaxPlayer('out2.svg', player=chess.WHITE, book="Formula12")
+# mp = MinimaxPlayer('out.svg', player=chess.BLACK, book="gm2600")
 
-PlayAgents(hp, mp)
+#PlayAgents(mp, hp)
+#PlayAgents(mp, mp2)
 
 # mp.move()
 
-# rp = RandomPlayer('random.svg')
-# rp.play()
-# rp.printGame()
-# call(["open", "random.svg"])
 
-# gp = GreedyPlayer('greedy.svg')
-# gp.play()
-# gp.printGame()
-# call(["open", "greedy.svg"])
+
+
