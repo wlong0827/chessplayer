@@ -123,7 +123,7 @@ class MinimaxPlayer(ChessPlayer):
         self.calculations = 0
         # start at 0 if white, 1 if black
         self.half_moves = int(not player)
-        if book == "" or book = None or book == False:
+        if book == "" or book == None or book == False:
             self.reader = None
         elif book == True:
             self.initOpeningBook()
