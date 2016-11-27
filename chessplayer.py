@@ -12,14 +12,6 @@ import random
 from subprocess import call
 import time
 
-class Tree:
-    def __init__(self, cargo):
-        self.cargo = cargo
-        self.children = []
-
-    def addChild(self, cargo):
-        self.children.append(cargo)
-
 class ChessPlayer:
     """
     The ChessPlayer class contains all of the chess engines
@@ -32,9 +24,10 @@ class ChessPlayer:
         self.file = open(outfile, 'w')
         self.board = chess.Board()
         self.game = chess.pgn.Game()
+        self.half_moves = 0
 
-    def isGameOver(self):
-        return self.board.is_game_over()
+    def isGameOver(self, board):
+        return board.is_game_over()
 
     # move is a chess.Move object
     def getMoveValue(self, move):
@@ -51,14 +44,15 @@ class ChessPlayer:
     def move(self, board):
         pass
 
-    def write(self, file):
-        self.file.write(chess.svg.board(board = self.board))
-        self.file.close()
+    def write(self, file, chessboard):
+    	f = open(file, 'w')
+        f.write(chess.svg.board(board = chessboard))
+        f.close()
 
     def play(self):
         board = self.board
 
-        while not self.isGameOver():
+        while not self.isGameOver(board):
             move = self.move(board)
             board.push(move)
 
@@ -107,12 +101,13 @@ class GreedyPlayer(ChessPlayer):
 
 class MinimaxPlayer(ChessPlayer):
 
-    def __init__(self, outfile):
+    def __init__(self, outfile, player):
         self.file = open(outfile, 'w')
         self.board = chess.Board()
         self.values = {'P': 1, 'R': 5, 'N': 3, 'B': 3, 'Q': 9, 'K': 1000}
-        self.tree = Tree(self.board)
-        self.calculations = 0    
+        self.calculations = 0
+        # start at 0 if white, 1 if black
+        self.half_moves = int(not player)  
 
     def boardValue(self, board):
         value = 0
@@ -122,48 +117,57 @@ class MinimaxPlayer(ChessPlayer):
                 p = piece.symbol()
                 if p.isupper():
                     value += self.values[p]
-                    print value
+                    # print value
                 else:
                     value -= self.values[p.upper()]
-                    print value
+                    # print value
         # if value != 0:
         #     print "VALUEEEE"
         return value
 
     def maxMove(self, board, depth, player):
         legal_moves = list(board.legal_moves)
-        value = -float('inf')
-        print len(legal_moves)
+        
+        value = (-float('inf'), None)
+        # print len(legal_moves)
         for move in legal_moves:
             board_copy = board.copy()
             self.calculations += 1
             board_copy.push(move)
-            value = max(value, self.move(board_copy, depth - 1, player))
+            #value = max(value, self.move(board_copy, depth - 1, player))
+            new_value = self.value(board_copy, depth - 1, player)
+            if new_value[0] > value[0]:
+            	value = new_value
         return value
 
     def minMove(self, board, depth, player):
         legal_moves = list(board.legal_moves)
-        print len(legal_moves)
-        value = float('inf')
+        # print len(legal_moves)
+        value = (float('inf'), None)
         for move in legal_moves:
             board_copy = board.copy()
             self.calculations += 1
             board_copy.push(move)
-            value = min(value, self.move(board_copy, depth - 1, player))
+            # value = min(value, self.move(board_copy, depth - 1, player))
+            new_value = self.value(board_copy, depth - 1, player)
+            if new_value[0] < value[0]:
+            	value = new_value
         return value
 
-    def move(self, board, depth=4, player=chess.WHITE):
-        print board
-        if depth == 0 or self.isGameOver():
+    def value(self, board, depth, player):
+        if depth == 0 or self.isGameOver(board):
             value = self.boardValue(board)
-            board.pop()
-            print "value", value
-            print "boards", self.calculations
-            return value
+            return (value, board.move_stack)
         if board.turn == player: 
             return self.maxMove(board, depth, player)
         else:
             return self.minMove(board, depth, player)
+
+    def move(self, board, depth = 3, player = chess.BLACK):
+    	value, moves = self.value(board, depth, board.turn)
+    	move = moves[self.half_moves]
+    	self.half_moves += 2
+    	return move
 
 class ReinforcementLearningPlayer(ChessPlayer):
     def __init__(self):
@@ -172,19 +176,27 @@ class ReinforcementLearningPlayer(ChessPlayer):
 
     def init_Zobrist(self):
         # fill a table of random bitstrings (used in hashing)
-
+        pass
 
 class HumanPlayer(ChessPlayer):
 
     def move(self, board):
         legal_moves = list(board.legal_moves)
-        move = raw_input("Input your move\n")
-        formatted_move = self.board.parse_san(str(move))
+      	options = {}
+      	options_str = "Choose an option: "
+        for i, move in enumerate(legal_moves):
+        	options[i] = move
+        	options_str += "(" + str(i) + "): " + str(move) + " "
+        print options_str + "\n"
+        
+        index = raw_input("Input your move:\n")
 
-        while formatted_move not in legal_moves:
-            move = raw_input("Incorrect input. Try again\n")
+        while not int(index) in options.keys():
+            index = raw_input("Incorrect input. Try again\n")
 
-        return formatted_move
+        move = options[int(index)]
+        print move
+        return move
 
 #class ClassificationPlayer(ChessPlayer):
 #   def move(self):
@@ -193,12 +205,16 @@ class HumanPlayer(ChessPlayer):
     PlayAgents(Player1, Player2)
     Plays a game of chess, with Player1 (white) vs. Player2 (black)
 """
+
 def PlayAgents(BlackPlayer, WhitePlayer):
     board = BlackPlayer.board
 
-    while not BlackPlayer.isGameOver():
+    while not BlackPlayer.isGameOver(board):
+    	BlackPlayer.write('out.svg', board)
         print board
         print "\n"
+        BlackPlayer.board = board
+        WhitePlayer.board = board
 
         if board.turn == chess.BLACK:
             move = BlackPlayer.move(board)
@@ -211,17 +227,19 @@ def PlayAgents(BlackPlayer, WhitePlayer):
         #time.sleep(1)
 
     print board.result()
-    BlackPlayer.write('out.svg')
+    BlackPlayer.close('out.svg')
 
 """
 -------------- Test Code -------------------------
 """
 # rp = RandomPlayer('out.svg')
 # gp = GreedyPlayer('out.svg')
-# hp = HumanPlayer('out.svg')
-# PlayAgents(gp, hp)
-mp = MinimaxPlayer('out.svg')
-mp.move(mp.board)
+hp = HumanPlayer('out.svg')
+mp = MinimaxPlayer('out.svg', chess.BLACK)
+
+PlayAgents(mp, hp)
+
+# mp.move()
 
 # rp = RandomPlayer('random.svg')
 # rp.play()
