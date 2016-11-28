@@ -139,6 +139,7 @@ class MinimaxPlayer(ChessPlayer):
         self.board = chess.Board()
         self.values = {'P': 1, 'R': 5, 'N': 3, 'B': 3, 'Q': 9, 'K': 1000}
         self.calculations = 0
+        self.legal_moves = 0
         # start at 0 if white, 1 if black
         self.half_moves = int(not player)
         if book == "" or book == None or book == False:
@@ -164,11 +165,9 @@ class MinimaxPlayer(ChessPlayer):
         #     print "VALUEEEE"
         return value
 
-    def maxMove(self, board, depth, player):
-        legal_moves = list(board.legal_moves)
-        
+    def maxMove(self, board, depth, player, alpha, beta):
+        legal_moves = list(board.legal_moves)  
         value = (-float('inf'), None)
-        # print len(legal_moves)
         for move in legal_moves:
             board_copy = board.copy()
             #self.calculations += 1
@@ -177,12 +176,15 @@ class MinimaxPlayer(ChessPlayer):
             new_value = self.value(board_copy, depth - 1, player)
             if new_value[0] > value[0]:
             	value = new_value
+           	if value[0] >= beta:
+           		print "max cut"
+           		return value
+           	alpha = max(alpha, value[0])
         #print "max value", value[0]
         return value
 
-    def minMove(self, board, depth, player):
+    def minMove(self, board, depth, player, alpha, beta):
         legal_moves = list(board.legal_moves)
-        # print len(legal_moves)
         value = (float('inf'), None)
         for move in legal_moves:
             board_copy = board.copy()
@@ -192,20 +194,27 @@ class MinimaxPlayer(ChessPlayer):
             new_value = self.value(board_copy, depth - 1, player)
             if new_value[0] < value[0]:
             	value = new_value
+            if value[0] <= alpha:
+            	print "min cut"
+            	return value
+            beta = min(beta, value[0])
         #print "min value", value[0]
         return value
 
     def value(self, board, depth, player):
+    	alpha = -float('inf')
+    	beta = float('inf')
+
         if depth == 0 or self.isGameOver(board):
             value = self.boardValue(board)
             self.calculations += 1
             return (value, board.move_stack)
         if board.turn == player: 
         	#print "asking max"
-        	return self.maxMove(board, depth, player)
+        	return self.maxMove(board, depth, player, alpha, beta)
         else:
         	#print "asking min"
-        	return self.minMove(board, depth, player)
+        	return self.minMove(board, depth, player, alpha, beta)
 
     def move(self, board, depth=3, player=chess.WHITE):
         # use opening book if we can
@@ -301,12 +310,12 @@ We should probably put this in a new file, eventually.
 Sorry for the merge conflicts here!
 """
 # rp = RandomPlayer('out.svg')
-# gp = GreedyPlayer('out.svg')
+gp = GreedyPlayer('out.svg')
 hp = HumanPlayer('out.svg')
-# mp2 = MinimaxPlayer('out2.svg', player=chess.WHITE, book="Formula12")
+mp2 = MinimaxPlayer('out2.svg', player=chess.WHITE, book="Formula12")
 mp = MinimaxPlayer('out.svg', player=chess.BLACK, book="gm2600")
 
-PlayAgents(mp, hp)
+PlayAgents(gp, mp2)
 #PlayAgents(mp, mp2)
 
 # mp.move()
