@@ -4,8 +4,27 @@ mnist = input_data.read_data_sets("/tmp/data/", one_hot=True)
 
 import tensorflow as tf
 
+file = open("train.txt", "r")
+lines = file.readlines()
+
+"""
+Each line in lines[] looks like:
+18,
+[0.2, 0.3, 0.4, 0.5, 0.6, 0.4, 0, 0.2, 
+0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 
+0, 0, 0, 0, 0, 0.3, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 0, 
+-0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, 
+-0.2, -0.3, -0.4, -0.5, -0.6, -0.4, -0.3, -0.2, 
+0]
+
+Here, X = [0.2, ..., 0] and y = 18
+"""
+
 # Parameters
-learning_rate = 0.001
+learning_rate = 0.05
 training_epochs = 15
 batch_size = 100
 display_step = 1
@@ -13,8 +32,8 @@ display_step = 1
 # Network Parameters
 n_hidden_1 = 256 # 1st layer number of features
 n_hidden_2 = 256 # 2nd layer number of features
-n_input = 784 # MNIST data input (img shape: 28*28)
-n_classes = 10 # MNIST total classes (0-9 digits)
+n_input = 65 # Chess position array: 64 squares + board.turn
+n_classes = 1000 # Possible engine scores (-10,000<score<10,000)?
 
 # tf Graph input
 x = tf.placeholder("float", [None, n_input])
@@ -53,7 +72,7 @@ optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
 # Initializing the variables
 init = tf.initialize_all_variables()
-
+"""
 # Launch the graph
 with tf.Session() as sess:
     sess.run(init)
@@ -81,3 +100,4 @@ with tf.Session() as sess:
     # Calculate accuracy
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
     print "Accuracy:", accuracy.eval({x: mnist.test.images, y: mnist.test.labels})
+    """
