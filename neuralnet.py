@@ -9,15 +9,13 @@ Y = []
 
 def classify(num):
     result = [0 for _ in range(200)]
-    if num in range(-12000, 12000):
+    if num in range(-1200, 1200):
         if num < 0:
-            num = (float(num) / 12000) * 100
-            result[100 - int(num)] = 1
+            num = int((float(num) / 1200) * 100)
+            result[99 - num] = 1
         else:
-            num = (float(num) / 12000) * 100
+            num = (float(num) / 1200) * 100
             result[int(num)] = 1
-    else:
-        print "classify failed"
     return result
 
 
@@ -109,8 +107,6 @@ pred = multilayer_perceptron(x, weights, biases)
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
-test_var = tf.Variable([0, 0, 0, 0, 0, 0, 0, 0.6, 0, 0, 0, 0, 0, 0.5, 0, 0.1, 0, 0, 0, 0, 0, 0.1, 0, 0.4, 0.1, 0, 0, 0, 0.1, -0.1, 0, 0, -0.1, 0, 0, 0.1, -0.1, 0, 0, -0.1, 0, 0, 0.1, -0.1, 0, 0, 0, 0, 0, 0, -0.1, 0, 0, 0, -0.5, -0.6, 0, -0.2, 0, 0, 0, 0, 0, 0, 1])
-
 # Initializing the variables
 init = tf.global_variables_initializer()
 
@@ -119,7 +115,7 @@ saver = tf.train.Saver()
 # Launch the graph
 with tf.Session() as sess:
     sess.run(init)
-    
+
     # Training cycle
     for epoch in range(training_epochs):
         avg_cost = 0.
@@ -164,5 +160,7 @@ with tf.Session() as sess:
         test_x.append(position)
         
     print "Accuracy:", accuracy.eval({x: test_x, y: test_y})
-    v = sess.run(test_var)    
-    print v # will show you your variable.
+    test_var = [0, 0, 0, 0, 0, 0, 0, 0.6, 0, 0, 0, 0, 0, 0.5, 0, 0.1, 0, 0, 0, 0, 0, 0.1, 0, 0.4, 0.1, 0, 0, 0, 0.1, -0.1, 0, 0, -0.1, 0, 0, 0.1, -0.1, 0, 0, -0.1, 0, 0, 0.1, -0.1, 0, 0, 0, 0, 0, 0, -0.1, 0, 0, 0, -0.5, -0.6, 0, 0, 0, 0, 0, 0, -0.2, 0, 0] 
+    
+    print sess.run(tf.argmax(pred,1), feed_dict = {x: [test_var]})
+    print classify(-287)
