@@ -1,4 +1,3 @@
-import numpy as np
 import tensorflow as tf
 
 file = open("train.txt", "r")
@@ -141,7 +140,8 @@ with tf.Session() as sess:
     # Calculate accuracy
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
 
-    saver.save(sess, 'chess-ann')
+    save_path = saver.save(sess, './chess-ann.ckpt')
+    print("Model saved in file: %s" % save_path)
 
     test_file = open("test.txt", "r")
     tests = test_file.readlines()

@@ -22,6 +22,9 @@ class ChessPlayer:
     our various engines. It includes several more general
     functions and checks that are shared across engines.
     """
+
+    # INITIALIZATION
+    # -------------------------
     def __init__(self, outfile):
         self.outfile = outfile
         self.board = chess.Board()
@@ -43,8 +46,24 @@ class ChessPlayer:
         else:
             self.tbs = None
 
+    # SIMPLE FUNCTIONS
+    # -------------------------
     def isGameOver(self, board):
         return board.is_game_over()
+
+    def writeBoard(self, outfile, chessboard):
+        f = open(outfile, 'w') 
+        f.write(chess.svg.board(board = chessboard))
+        f.close()
+
+    def printGame(self):
+        print self.game
+
+    def exit(self):
+        if self.reader:
+            self.reader.close()
+        if self.tbs:
+            self.tbs.close()
 
     # move is a chess.Move object
     def getMoveValue(self, move):
@@ -56,6 +75,7 @@ class ChessPlayer:
             return self.values[str(piece).upper()]
         return 0
 
+    # naive evaluation function -- just material
     def getBoardValue(self, board):
         value = 0
         for square in range(64):
@@ -139,11 +159,6 @@ class ChessPlayer:
     def move(self, board):
         pass
 
-    def writeBoard(self, outfile, chessboard):
-        f = open(outfile, 'w') 
-        f.write(chess.svg.board(board = chessboard))
-        f.close()
-
     # def play(self):
     #     board = self.board
 
@@ -154,15 +169,6 @@ class ChessPlayer:
     #     self.game = chess.pgn.Game.from_board(self.board)
 
     #     self.writeBoard(self.file)
-
-    def printGame(self):
-        print self.game
-
-    def exit(self):
-        if self.reader:
-            self.reader.close()
-        if self.tbs:
-            self.tbs.close()
 
 """
     RandomPlayer plays a random legal move at each step until
@@ -290,18 +296,6 @@ class MinimaxPlayer(ChessPlayer):
             return self.minMove(board, depth, player, alpha, beta)
 
     def move(self, board, depth=3, player=chess.WHITE):
-        # use opening book if we can
-        # if self.reader and self.half_moves <= 20:
-        #     book_entry = None
-        #     try:
-        #         book_entry = self.reader.weighted_choice(board)
-        #         #book_entry = self.reader.find(board)
-        #     except IndexError:
-        #         book_entry = None
-        #     if book_entry != None:
-        #         print "used book"
-        #         self.half_moves += 2
-        #         return book_entry.move()
         value, moves = self.value(board, depth, player)
         move = moves[self.half_moves]
         #print "final value", value
@@ -315,7 +309,7 @@ class GreedyNNPlayer(GreedyPlayer):
         pass
 
 class MinMaxNNPlayer(MinimaxPlayer):
-    
+
     def getBoardValue(self, board):
         pass
 
