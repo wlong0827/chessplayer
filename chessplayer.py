@@ -18,21 +18,19 @@ import sys
 
 class ChessPlayer:
     """
-    The ChessPlayer class contains all of the chess engines
-    that we will write as well as any helper functions useful
-    to writing the engines. It opens the svg file to write
-    our output to as well as the chess board itself
+    The ChessPlayer class is the parent class for all of
+    our various engines. It includes several more general
+    functions and checks that are shared across engines.
     """
     def __init__(self, outfile):
-        # outfile should be a path to a svg
-        self.file = open(outfile, 'w')
+        self.outfile = outfile
         self.board = chess.Board()
         self.game = chess.pgn.Game()
         self.reader = None
         self.tbs = None
         self.half_moves = 0
 
-    def initOpeningBook(self, book="Formula12"):
+    def initOpeningBook(self, book="gm2600"):
         path = "opening_books/" + book + ".bin"
         if os.path.isfile(path):
             self.reader = chess.polyglot.open_reader(path)
@@ -58,40 +56,93 @@ class ChessPlayer:
             return self.values[str(piece).upper()]
         return 0
 
+    def getBoardValue(self, board):
+        value = 0
+        for square in range(64):
+            piece = board.piece_at(square)
+            if piece:
+                p = piece.symbol()
+                if p.isupper():
+                    value += self.values[p]
+                    # print value
+                else:
+                    value -= self.values[p.upper()]
+                    # print value
+        return value
+
+    def getNumPieces(self, board):
+        count = 0
+        for square in range(64):
+            if board.piece_at(square):
+                count += 1
+        return count
+
+    def getEndgameMoves(self, board, legal_moves):
+        wins = []
+        losses = []
+        draws = []
+        for move in legal_moves:
+            board.push(move)
+            dtz = self.tbs.probe_dtz(board)
+            if dtz == None:
+                pass
+            elif dtz > 0:
+                # winning move
+                wins.append((move, dtz))
+            elif dtz == 0:
+                # drawing move
+                draws.append(move)
+            else:
+                # losing move
+                losses.append((move, dtz))
+            board.pop()
+
+        half_moves_left = 100 - board.halfmove_clock
+        if wins:
+            if dtz >= half_moves_left - 4:
+                moves = sorted(wins, key=lambda win: win[1])[0][0]
+            else:
+                moves = [win[0] for win in wins]
+            moves = wins
+        elif draws:
+            moves = draws
+        elif losses:
+            moves = sorted(losses, key=lambda loss: loss[1], reverse=True)[0][0]
+        else:
+            moves = []
+        return moves
+
     def getGoodMoves(self, board):
         moves = []
         legal_moves = list(board.legal_moves)
         # endgame tablebases
-        if self.tbs:
-            # find winning or neutral moves
-            for move in legal_moves:
-                board.push(move)
-                if self.tbs.probe_wdl(board) >= 0:
-                    moves.append(move)
-                board.pop()
-            print "used endgame:", moves
+        if self.tbs and self.getNumPieces(board) <= 5:
+            moves = self.getEndgameMoves(board, moves)
+            #if moves:
+                #print "used endgame:", moves
         # opening book
-        elif self.reader and self.half_moves <= 20:
+        elif self.reader and self.board.fullmove_number <= 10:
             moves = [entry.move() for entry in self.reader.find_all(board)
                         if entry.move() in legal_moves]
-            print "used opening:", moves
+            #print "used opening:", moves
         else:
             moves = legal_moves
-            print "standard"
+            #print "standard"
 
         if moves:
             return moves
         else:
-            print "jk, used standard"
+            #print "jk, used standard"
             return legal_moves
 
     # overwritten by engines
     def move(self, board):
         pass
 
-    def writeBoard(self, file, chessboard):
-        f = open(file, 'w')
+    def writeBoard(self, outfile, chessboard):
+        f = open(outfile, 'w') 
         f.write(chess.svg.board(board = chessboard))
+        f.close()
 
     # def play(self):
     #     board = self.board
@@ -108,9 +159,10 @@ class ChessPlayer:
         print self.game
 
     def exit(self):
-        self.file.close()
         if self.reader:
             self.reader.close()
+        if self.tbs:
+            self.tbs.close()
 
 """
     RandomPlayer plays a random legal move at each step until
@@ -125,33 +177,46 @@ class RandomPlayer(ChessPlayer):
 
 class GreedyPlayer(ChessPlayer):
 
-    def __init__(self, outfile):
-        self.file = open(outfile, 'w')
+    def __init__(self, outfile, book="", directory=""):
+        self.outfile = outfile
         self.board = chess.Board()
 
         # I can't seem to find a piece value dict so I wrote one
         self.values = {'P': 2, 'R': 5, 'N': 3, 'B': 3.5, 'Q': 9, 'K': 5}
 
+        if isinstance(book, basestring) and book != "":
+            self.initOpeningBook(book)
+        elif book == True:
+            self.initOpeningBook()
+        else:
+            self.reader = None
+
+        if isinstance(directory, basestring) and directory != "":
+            self.initTablebases(directory)
+        elif directory == True:
+            self.initTablebases()
+        else:
+            self.tbs = None
+
     def move(self, board):   
         # best_move = (move, value)
-        legal_moves = list(board.legal_moves)
+        moves = self.getGoodMoves(board)
         best_move = (None, -float('inf'))
 
-        for move in legal_moves:
-            value = self.getMoveValue(move)
+        # takes move that maximizes immediate board value
+        for move in moves:
+            board.push(move)
+            value = self.getBoardValue(board)
             if value > best_move[1]:
                 best_move = (move, value)
-
-        # If we can't take anything, return random move
-        if best_move[1] == 0:
-            return legal_moves[random.randint(0, len(legal_moves) - 1)]
+            board.pop()
         
         return best_move[0]
 
 class MinimaxPlayer(ChessPlayer):
 
     def __init__(self, outfile, player=chess.WHITE, book="", directory=""):
-        self.file = open(outfile, 'w')
+        self.outfile = outfile
         self.board = chess.Board()
         self.values = {'P': 2, 'R': 5, 'N': 3, 'B': 3.5, 'Q': 9, 'K': 1000}
         self.calculations = 0
@@ -173,20 +238,6 @@ class MinimaxPlayer(ChessPlayer):
         else:
             self.tbs = None
 
-    def boardValue(self, board):
-        value = 0
-        for square in range(64):
-            piece = board.piece_at(square)
-            if piece:
-                p = piece.symbol()
-                if p.isupper():
-                    value += self.values[p]
-                    # print value
-                else:
-                    value -= self.values[p.upper()]
-                    # print value
-        return value
-
     def maxMove(self, board, depth, player, alpha, beta):
         moves = self.getGoodMoves(board)
         value = (-float('inf'), None)
@@ -199,7 +250,7 @@ class MinimaxPlayer(ChessPlayer):
             if new_value[0] > value[0]:
                 value = new_value
             if value[0] >= beta:
-                print "max cut"
+                #print "max cut"
                 return value
             alpha = max(alpha, value[0])
         #print "max value", value[0]
@@ -217,7 +268,7 @@ class MinimaxPlayer(ChessPlayer):
             if new_value[0] < value[0]:
                 value = new_value
             if value[0] <= alpha:
-                print "min cut"
+                #print "min cut"
                 return value
             beta = min(beta, value[0])
         #print "min value", value[0]
@@ -228,7 +279,7 @@ class MinimaxPlayer(ChessPlayer):
         beta = float('inf')
 
         if depth == 0 or self.isGameOver(board):
-            value = self.boardValue(board)
+            value = self.getBoardValue(board)
             self.calculations += 1
             return (value, board.move_stack)
         if board.turn == player: 
@@ -253,15 +304,20 @@ class MinimaxPlayer(ChessPlayer):
         #         return book_entry.move()
         value, moves = self.value(board, depth, player)
         move = moves[self.half_moves]
-        print "final value", value
-        print "calcs", self.calculations
+        #print "final value", value
+        #print "calcs", self.calculations
         self.half_moves += 2
         return move
 
-class ReinforcementLearningPlayer(ChessPlayer):
-    def __init__(self):
-        self.file = open(outfile, 'w')
-        self.board = chess.Board()
+class GreedyNNPlayer(GreedyPlayer):
+
+    def getBoardValue(self, board):
+        pass
+
+class MinMaxNNPlayer(MinimaxPlayer):
+    
+    def getBoardValue(self, board):
+        pass
 
 class HumanPlayer(ChessPlayer):
 
@@ -291,60 +347,45 @@ class HumanPlayer(ChessPlayer):
         return move
 
 
+
 """
     PlayAgents(Player1, Player2)
     Plays a game of chess, with Player1 (white) vs. Player2 (black)
 """
-
-def PlayAgents(BlackPlayer, WhitePlayer):
-    board = BlackPlayer.board
-
-    while not BlackPlayer.isGameOver(board):
-        BlackPlayer.writeBoard('out.svg', board)
+def PlayAgents(WhitePlayer, BlackPlayer, debug=False):
+    board = WhitePlayer.board
+    if debug:
         print board
-        print "\n"
+        print '\n'
+
+    while not WhitePlayer.isGameOver(board):
+        WhitePlayer.writeBoard('out.svg', board)
 
         # Update both Players' boards
-        BlackPlayer.board = board
         WhitePlayer.board = board
+        BlackPlayer.board = board
 
-        if board.turn == chess.BLACK:
-            move = BlackPlayer.move(board)
-            print "Black's move: {}".format(move)
+        if board.turn == chess.WHITE:
+            if debug:
+                print "Move:", board.fullmove_number
+            move = WhitePlayer.move(board)
+            if debug:
+                print "White's move: {}".format(move)
             board.push(move)
         else:
-            print "Move:", board.fullmove_number
-            move = WhitePlayer.move(board)
-            print "White's move: {}".format(move)
+            move = BlackPlayer.move(board)
+            if debug:
+                print "Black's move: {}".format(move)
             board.push(move)
 
-        #print board
-        #time.sleep(1)
+        if debug:
+            print board
+            print '\n'
+            time.sleep(1)
 
-    print board
-    print board.result()
-    print chess.pgn.Game.from_board(board)
-    BlackPlayer.exit()
-    WhitePlayer.exit()
+    if debug:
+        print board
+        print board.result()
+        print chess.pgn.Game.from_board(board)
 
-"""
--------------- Test Code -------------------------
-We should probably put this in a new file, eventually.
-Sorry for the merge conflicts here!
-"""
-# rp = RandomPlayer('out.svg')
-#gp = GreedyPlayer('out.svg')
-hp = HumanPlayer('out.svg')
-#mp = MinimaxPlayer('out1.svg', player=chess.BLACK, book=False)
-# mp2 = MinimaxPlayer('out2.svg', player=chess.WHITE, book="Formula12")
-mp2 = MinimaxPlayer('out2.svg', player=chess.BLACK, book="Formula12")
-#mp = MinimaxPlayer('out.svg', player=chess.BLACK, book="gm2600")
-
-PlayAgents(mp2, hp)
-#PlayAgents(mp, mp2)
-
-# mp.move()
-
-
-
-
+    return board.result()
