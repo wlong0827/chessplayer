@@ -44,6 +44,7 @@ for line in file2:
 		scores.append(l[1])
 
 scores = scores[1:]
+count = 0
 
 assert(len(scores) == len(games))
 for i in range(len(scores)):
@@ -59,15 +60,20 @@ for i in range(len(scores)):
 
 	assert(len(s) == len(g))
 	for j in range(len(s)):
-		b.push(chess.Move.from_uci(g[j]))
-		positions.append((int(s[j]), b.copy()))
+		try:
+			b.push(chess.Move.from_uci(g[j]))
+			positions.append((int(s[j]), b.copy()))
+		except:
+			print "one messed up"
 
 	for position in positions:
 		if not position[0] == 0:
 			result = encode(position[1])
-			string = str(position[0]) + "," + str(result) + "\n"
+			string = str(position[0]) + str(result) + "\n"
+			count += 1
 			f3.write(string)
 
+print count
 f3.close()
 
 
