@@ -296,18 +296,6 @@ class MinimaxPlayer(ChessPlayer):
             return self.minMove(board, depth, player, alpha, beta)
 
     def move(self, board, depth=3, player=chess.WHITE):
-        # use opening book if we can
-        # if self.reader and self.half_moves <= 20:
-        #     book_entry = None
-        #     try:
-        #         book_entry = self.reader.weighted_choice(board)
-        #         #book_entry = self.reader.find(board)
-        #     except IndexError:
-        #         book_entry = None
-        #     if book_entry != None:
-        #         print "used book"
-        #         self.half_moves += 2
-        #         return book_entry.move()
         value, moves = self.value(board, depth, player)
         move = moves[self.half_moves]
         #print "final value", value

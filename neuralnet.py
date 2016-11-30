@@ -1,4 +1,3 @@
-import numpy as np
 import tensorflow as tf
 
 file = open("train.txt", "r")
@@ -109,8 +108,6 @@ pred = multilayer_perceptron(x, weights, biases)
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
-test_var = tf.Variable([0, 0, 0, 0, 0, 0, 0, 0.6, 0, 0, 0, 0, 0, 0.5, 0, 0.1, 0, 0, 0, 0, 0, 0.1, 0, 0.4, 0.1, 0, 0, 0, 0.1, -0.1, 0, 0, -0.1, 0, 0, 0.1, -0.1, 0, 0, -0.1, 0, 0, 0.1, -0.1, 0, 0, 0, 0, 0, 0, -0.1, 0, 0, 0, -0.5, -0.6, 0, -0.2, 0, 0, 0, 0, 0, 0, 1])
-
 # Initializing the variables
 init = tf.global_variables_initializer()
 
@@ -145,7 +142,8 @@ with tf.Session() as sess:
     # Calculate accuracy
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
 
-    saver.save(sess, 'chess-ann')
+    save_path = saver.save(sess, './chess-ann.ckpt')
+    print("Model saved in file: %s" % save_path)
 
     test_file = open("test.txt", "r")
     tests = test_file.readlines()
@@ -164,5 +162,3 @@ with tf.Session() as sess:
         test_x.append(position)
         
     print "Accuracy:", accuracy.eval({x: test_x, y: test_y})
-    v = sess.run(test_var)    
-    print v # will show you your variable.
