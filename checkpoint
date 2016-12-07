@@ -1,2 +1,2 @@
-model_checkpoint_path: "chess-ann"
-all_model_checkpoint_paths: "chess-ann"
+model_checkpoint_path: "chess-ann.ckpt"
+all_model_checkpoint_paths: "chess-ann.ckpt"
