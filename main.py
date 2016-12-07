@@ -11,10 +11,12 @@ Create Chessplayer Instances
 
 rp = chessplayer.RandomPlayer('rp-out.svg')
 
-gp = chessplayer.GreedyPlayer('gp-out.svg')
-gp_book = chessplayer.GreedyPlayer('gp-book-out.svg', book=True)
-gp_dir = chessplayer.GreedyPlayer('gp-dir-out.svg', book=True, directory=True)
-gp_dir2 = chessplayer.GreedyPlayer('gp-dir2-out.svg', book=True, directory=True)
+gpw = chessplayer.GreedyPlayer('gp-out.svg')
+gpb = chessplayer.GreedyPlayer('gp-out.svg', player=chess.BLACK)
+gpw_book = chessplayer.GreedyPlayer('gp-book-out.svg', book=True)
+gpb_book = chessplayer.GreedyPlayer('gp-book-out.svg', player=chess.BLACK, book=True)
+gpw_dir = chessplayer.GreedyPlayer('gp-dir-out.svg', book=True, directory=True)
+gpb_dir = chessplayer.GreedyPlayer('gp-dir2-out.svg', player=chess.BLACK, book=True, directory=True)
 
 mpw = chessplayer.MinimaxPlayer('mpw-out.svg', player=chess.WHITE)
 mpb = chessplayer.MinimaxPlayer('mpb-out.svg', player=chess.BLACK)
@@ -25,26 +27,31 @@ mpb_book = chessplayer.MinimaxPlayer('mpb-book-out.svg', player=chess.BLACK, boo
 mpw_dir = chessplayer.MinimaxPlayer('mpw-dir-out.svg', player=chess.WHITE, book=True, directory=True)
 mpb_dir = chessplayer.MinimaxPlayer('mpb-dir-out.svg', player=chess.BLACK, book=True, directory=True)
 
+
 """
 Do Testing
 ----------
 """
-runners.PlayAgents(gp, gp_dir2, debug=True)
+
+#hp = runners.RandomPlayer('hp-out.svg')
+
+#runners.PlayAgents(gpw, rp, debug=True)
+runners.PlayAgents(mpw_dir, gpb_book, debug=True)
 
 
 """
-Run Statistics
+Generate Statistics
 --------------
 """
 
 # stats = []
 
-# stats.append(['Greedy vs. Random'] + runners.calcStats((gp, rp), (rp, gp), 100))
-# stats.append(['Greedy with Book vs. Random'] + calcStats((gp_book, rp), (rp, gp_book), 100))
-# stats.append(['Greedy with Book/TBs vs. Random'] + calcStats((gp_dir, rp), (rp, gp_dir), 100))
-# stats.append(['Minimax vs. Greedy'] + calcStats((mpw, gp), (gp, mpb), 5))
-# stats.append(['Minimax with Book vs. Greedy'] + calcStats((mpw_book, gp), (gp, mpb_book), 5))
-# stats.append(['Minimax with Book/TBs vs. Greedy'] + calcStats((mpw_dir, gp), (gp, mpb_dir), 5))
+# stats.append(['Greedy vs. Random'] + runners.calcStats((gpw, rp), (rp, gpb), 100))
+# stats.append(['Greedy with Book vs. Random'] + runners.calcStats((gpw_book, rp), (rp, gpb_book), 100))
+# stats.append(['Greedy with Book/TBs vs. Random'] + runners.calcStats((gpw_dir, rp), (rp, gpb_dir), 100))
+# stats.append(['Minimax vs. Greedy'] + runners.calcStats((mpw, gpb), (gpw, mpb), 2))
+# stats.append(['Minimax with Book vs. Greedy'] + runners.calcStats((mpw_book, gpb), (gpw, mpb_book), 2))
+# stats.append(['Minimax with Book/TBs vs. Greedy'] + runners.calcStats((mpw_dir, gpb), (gpw, mpb_dir), 5, trunc=True))
 
 # longest_title = max([len(x[0]) for x in stats])
 # header = ['Matchup', 'Total Games', 'Wins', 'Losses', 'Draws', 'Win Percentage']
@@ -54,4 +61,3 @@ Run Statistics
 #     table.add_row(row)
 
 # print table
-
