@@ -15,7 +15,9 @@ def PlayAgents(WhitePlayer, BlackPlayer, debug=False, truncate=False):
     if debug:
         print board
         WhitePlayer.writeBoard('out.svg', board)
+        call(['open', 'out.svg'])
         print '\n'
+        time.sleep(2)
 
     stop_cond = board.is_game_over(claim_draw=True)
     if truncate:
@@ -45,7 +47,7 @@ def PlayAgents(WhitePlayer, BlackPlayer, debug=False, truncate=False):
 
         stop_cond = board.is_game_over(claim_draw=True)
         if truncate:
-            stop_cond = (board.fullmove_number > 15 or board.is_game_over(claim_draw=True))
+            stop_cond = (board.fullmove_number > 20 or board.is_game_over(claim_draw=True))
 
     if not truncate:
         result = board.result
