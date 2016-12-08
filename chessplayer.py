@@ -13,6 +13,9 @@ from chess import syzygy
 import random
 import os
 
+# depth for search
+MAX_DEPTH = 3
+
 # stuff for evaluation function
 import pstbs
 MATE_VALUE = 10000
@@ -30,9 +33,9 @@ class ChessPlayer:
 
     # INITIALIZATION
     # -------------------------
-    def __init__(self, outfile):
+    def __init__(self, outfile, fen=chess.STARTING_FEN):
         self.outfile = outfile
-        self.board = chess.Board()
+        self.board = chess.Board(fen)
         self.game = chess.pgn.Game()
         self.reader = None
         self.tbs = None
@@ -88,12 +91,13 @@ class ChessPlayer:
             else:
                 return -MATE_VALUE
 
-        white, black = self.getMaterial(board)
-        material = white - black
+        white_mat, black_mat = self.getMaterial(board)
+        material = white_mat - black_mat
 
         # only evaluate position after opening
         if board.fullmove_number > 5:
-            position = self.evalPosition(board, white, black)
+            white_pos, black_pos = self.evalPosition(board, white_mat, black_mat)
+            position = white_pos - black_pos
         else:
             position = 0
 
@@ -107,16 +111,16 @@ class ChessPlayer:
         return (mat_weight * material) + (pos_weight * position)
 
     def getMaterial(self, board):
-        white = 0
-        black = 0
+        white_mat = 0
+        black_mat = 0
         for square in chess.SQUARES:
             piece = board.piece_at(square)
             if piece and piece != chess.KING:
                 if piece.color == chess.WHITE:
-                    white += self.values[piece.piece_type]
+                    white_mat += self.values[piece.piece_type]
                 else:
-                    black += self.values[piece.piece_type]
-        return (white, black)
+                    black_mat += self.values[piece.piece_type]
+        return (white_mat, black_mat)
 
     def getNumPieces(self, board):
         count = 0
@@ -125,19 +129,43 @@ class ChessPlayer:
                 count += 1
         return count
 
-    def evalPosition(self, board, white, black):
-        position = 0
+    def lookupPST(self, square, piece, endgame):
+        # king PST depends on game stage and color
+        if piece.piece_type == chess.KING:
+            if endgame:
+                val = pstbs.tables['end K'][square]
+            elif piece.color == chess.WHITE:
+                val = pstbs.tables['white mid K'][square]
+            else:
+                val = pstbs.tables['black mid K'][square]
+
+        # pawn PST depends on color
+        elif piece.piece_type == chess.PAWN:
+            if piece.color == chess.WHITE:
+                val = pstbs.tables['white P'][square]
+            else:
+                val = pstbs.tables['black P'][square]
+
+        # all other pieces have symmetrical PSTs
+        else:
+            val = pstbs.tables[piece.piece_type][square]
+
+        return val / 50.0
+
+    def evalPosition(self, board, white_mat, black_mat):
+        white_pos = 0
+        black_pos = 0
+        endgame = 1 if white_mat <= 13 and black_mat <= 13 else 0 
+
         for square in chess.SQUARES:
             piece = board.piece_at(square)
-            if piece and piece.color == chess.WHITE:
-                if piece.piece_type == chess.KING:
-                    if white <= 13 and black <= 13:
-                        position += (pstbs.tables['end K'][square] / 50.0)
-                    else:
-                        position += (pstbs.tables['mid K'][square] / 50.0)
+            if piece:
+                if piece.color == chess.WHITE:
+                    white_pos += self.lookupPST(square, piece, endgame)
                 else:
-                    position += (pstbs.tables[piece.piece_type][square] / 50.0)
-        return position
+                    black_pos += self.lookupPST(square, piece, endgame)
+
+        return (white_pos, black_pos)
 
     def getEndgameMoves(self, board, legal_moves):
         wins = []
@@ -225,9 +253,9 @@ class RandomPlayer(ChessPlayer):
 
 class GreedyPlayer(ChessPlayer):
 
-    def __init__(self, outfile, player=chess.WHITE, book="", directory=""):
+    def __init__(self, outfile, fen=chess.STARTING_FEN, player=chess.WHITE, book="", directory=""):
         self.outfile = outfile
-        self.board = chess.Board()
+        self.board = chess.Board(fen)
 
         # I can't seem to find a piece value dict so I wrote one
         self.values = { chess.PAWN : 1, 
@@ -276,9 +304,9 @@ class GreedyPlayer(ChessPlayer):
 
 class MinimaxPlayer(ChessPlayer):
 
-    def __init__(self, outfile, player=chess.WHITE, book="", directory=""):
+    def __init__(self, outfile, fen=chess.STARTING_FEN, player=chess.WHITE, book="", directory=""):
         self.outfile = outfile
-        self.board = chess.Board()
+        self.board = chess.Board(fen)
         self.values = { chess.PAWN : 1, 
                         chess.ROOK : 5, 
                         chess.KNIGHT : 3, 
@@ -312,13 +340,21 @@ class MinimaxPlayer(ChessPlayer):
             #self.calculations += 1
             board_copy.push(move)
             #value = max(value, self.move(board_copy, depth - 1, player))
-            new_value = self.value(board_copy, depth - 1, player)
-            if new_value[0] > value[0]:
-                value = new_value
+            new_val = self.value(board_copy, depth - 1, player, alpha, beta)
+            if new_val[0] > value[0]:
+                value = new_val
+            elif (new_val[0] == value[0] and 
+                len(new_val[1]) < len(value[1]) and new_val[0] > 0):
+                value = new_val
             if value[0] >= beta:
                 #print "max cut"
                 return value
             alpha = max(alpha, value[0])
+            if (value[0] == MATE_VALUE and 
+                board_copy.is_checkmate() and
+                depth == MAX_DEPTH):
+                print "yes"
+                return value
         #print "max value", value[0]
         return value
 
@@ -330,20 +366,24 @@ class MinimaxPlayer(ChessPlayer):
             #self.calculations += 1
             board_copy.push(move)
             # value = min(value, self.move(board_copy, depth - 1, player))
-            new_value = self.value(board_copy, depth - 1, player)
-            if new_value[0] < value[0]:
-                value = new_value
+            new_val = self.value(board_copy, depth - 1, player, alpha, beta)
+            if new_val[0] < value[0]:
+                value = new_val
+            elif (new_val[0] == value[0] and 
+                len(new_val[1]) < len(value[1]) and new_val[0] < 0):
+                value = new_val
             if value[0] <= alpha:
                 #print "min cut"
                 return value
             beta = min(beta, value[0])
+            if (value[0] == -MATE_VALUE and 
+                board_copy.is_checkmate() and
+                depth == MAX_DEPTH):
+                return value
         #print "min value", value[0]
         return value
 
-    def value(self, board, depth, player):
-        alpha = -float('inf')
-        beta = float('inf')
-
+    def value(self, board, depth, player, alpha, beta):
         if depth == 0 or board.is_game_over():
             value = self.getBoardValue(board)
             self.calculations += 1
@@ -355,8 +395,10 @@ class MinimaxPlayer(ChessPlayer):
             #print "asking min"
             return self.minMove(board, depth, player, alpha, beta)
 
-    def move(self, board, depth=3, player=chess.WHITE):
-        value, moves = self.value(board, depth, player)
+    def move(self, board, depth=MAX_DEPTH, player=chess.WHITE):
+        alpha = -float('inf')
+        beta = float('inf')
+        value, moves = self.value(board, depth, player, alpha, beta)
         print "minimax value: ", value
         move = moves[self.half_moves]
         #print "calcs", self.calculations
