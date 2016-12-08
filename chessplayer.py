@@ -1,5 +1,5 @@
 # Author: James Baskerville, Vinay Iyengar, Will Long
-# MRU: Nov 23 2016
+# MRU: Dec 07 2016
 # Description: Our CS 182 Final Project is a python program that 
 #   utilizes python-chess to analyze and play chess
 
@@ -21,7 +21,7 @@ import pstbs
 MATE_VALUE = 10000
 
 # weights
-mat_weight = 10.0
+mat_weight = 30.0
 pos_weight = 4.0
 
 class ChessPlayer:
@@ -431,13 +431,20 @@ class HumanPlayer(ChessPlayer):
 
         while True:
             try:
-                move = chess.Move.from_uci(inp)
+                move = board.parse_uci(inp)
+                if move == chess.Move.null():
+                    inp = raw_input("Illegal move. Try again.\n")
+                    continue
             except ValueError:
-                inp = raw_input("Invalid input. Try again.\n")
-                continue
-            if move not in legal_moves:
-                inp = raw_input("Illegal move. Try again.\n")
-            else:
-                break
+                try:
+                    move = board.parse_san(inp)
+                    if move == chess.Move.null():
+                        inp = raw_input("Illegal move. Try again.\n")
+                        continue
+                except ValueError:
+                    inp = raw_input("Invalid input. Try again.\n")
+                    continue
+
+            break
 
         return move

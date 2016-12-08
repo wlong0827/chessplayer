@@ -36,9 +36,15 @@ Do Testing
 #start_fen = "B7/K1B1p1Q1/5r2/7p/1P1kp1bR/3P3R/1P1NP3/2n5 w - - 0 1"
 start_fen = chess.STARTING_FEN
 
-mpw_test = chessplayer.MinimaxPlayer(   'mp-test.svg', 
+mpw_test = chessplayer.MinimaxPlayer(   'mpw-test.svg', 
                                         fen         = start_fen,
                                         player      = chess.WHITE,
+                                        book        = True,
+                                        directory   = True )
+
+mpb_test = chessplayer.MinimaxPlayer(   'mpb-test.svg', 
+                                        fen         = start_fen,
+                                        player      = chess.BLACK,
                                         book        = True,
                                         directory   = True )
 
@@ -48,7 +54,11 @@ gpb_test = chessplayer.GreedyPlayer(   'gp-test.svg',
                                         book        = True,
                                         directory   = True )
 
-runners.PlayAgents(mpw_test, gpb_test, debug=True)
+hp = chessplayer.HumanPlayer('hp-out.svg')
+
+#runners.PlayAgents(mpw_test, hp, debug=True)
+
+runners.PlayAgents(hp, mpb_test, debug=True)
 
 """
 Generate Statistics
