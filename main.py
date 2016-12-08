@@ -9,23 +9,23 @@ Create Chessplayer Instances
 ----------------------------
 """
 
-rp = chessplayer.RandomPlayer('rp-out.svg')
+# rp = chessplayer.RandomPlayer('rp-out.svg')
 
-gpw = chessplayer.GreedyPlayer('gp-out.svg')
-gpb = chessplayer.GreedyPlayer('gp-out.svg', player=chess.BLACK)
-gpw_book = chessplayer.GreedyPlayer('gp-book-out.svg', book=True)
-gpb_book = chessplayer.GreedyPlayer('gp-book-out.svg', player=chess.BLACK, book=True)
-gpw_dir = chessplayer.GreedyPlayer('gp-dir-out.svg', book=True, directory=True)
-gpb_dir = chessplayer.GreedyPlayer('gp-dir2-out.svg', player=chess.BLACK, book=True, directory=True)
+# gpw = chessplayer.GreedyPlayer('gp-out.svg')
+# gpb = chessplayer.GreedyPlayer('gp-out.svg', player=chess.BLACK)
+# gpw_book = chessplayer.GreedyPlayer('gp-book-out.svg', book=True)
+# gpb_book = chessplayer.GreedyPlayer('gp-book-out.svg', player=chess.BLACK, book=True)
+# gpw_dir = chessplayer.GreedyPlayer('gp-dir-out.svg', book=True, directory=True)
+# gpb_dir = chessplayer.GreedyPlayer('gp-dir2-out.svg', player=chess.BLACK, book=True, directory=True)
 
-mpw = chessplayer.MinimaxPlayer('mpw-out.svg', player=chess.WHITE)
-mpb = chessplayer.MinimaxPlayer('mpb-out.svg', player=chess.BLACK)
+# mpw = chessplayer.MinimaxPlayer('mpw-out.svg', player=chess.WHITE)
+# mpb = chessplayer.MinimaxPlayer('mpb-out.svg', player=chess.BLACK)
 
-mpw_book = chessplayer.MinimaxPlayer('mpw-book-out.svg', player=chess.WHITE, book=True)
-mpb_book = chessplayer.MinimaxPlayer('mpb-book-out.svg', player=chess.BLACK, book=True)
+# mpw_book = chessplayer.MinimaxPlayer('mpw-book-out.svg', player=chess.WHITE, book=True)
+# mpb_book = chessplayer.MinimaxPlayer('mpb-book-out.svg', player=chess.BLACK, book=True)
 
-mpw_dir = chessplayer.MinimaxPlayer('mpw-dir-out.svg', player=chess.WHITE, book=True, directory=True)
-mpb_dir = chessplayer.MinimaxPlayer('mpb-dir-out.svg', player=chess.BLACK, book=True, directory=True)
+# mpw_dir = chessplayer.MinimaxPlayer('mpw-dir-out.svg', player=chess.WHITE, book=True, directory=True)
+# mpb_dir = chessplayer.MinimaxPlayer('mpb-dir-out.svg', player=chess.BLACK, book=True, directory=True)
 
 
 """
@@ -33,11 +33,22 @@ Do Testing
 ----------
 """
 
-#hp = runners.RandomPlayer('hp-out.svg')
+#start_fen = "B7/K1B1p1Q1/5r2/7p/1P1kp1bR/3P3R/1P1NP3/2n5 w - - 0 1"
+start_fen = chess.STARTING_FEN
 
-#runners.PlayAgents(gpw, rp, debug=True)
-runners.PlayAgents(mpw_dir, gpb_book, debug=True)
+mpw_test = chessplayer.MinimaxPlayer(   'mp-test.svg', 
+                                        fen         = start_fen,
+                                        player      = chess.WHITE,
+                                        book        = True,
+                                        directory   = True )
 
+gpb_test = chessplayer.GreedyPlayer(   'gp-test.svg', 
+                                        fen         = start_fen,
+                                        player      = chess.BLACK,
+                                        book        = True,
+                                        directory   = True )
+
+runners.PlayAgents(mpw_test, gpb_test, debug=True)
 
 """
 Generate Statistics
