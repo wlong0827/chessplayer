@@ -14,8 +14,8 @@ def PlayAgents(WhitePlayer, BlackPlayer, debug=False, truncate=False):
     board = WhitePlayer.board
     if debug:
         print board
-        WhitePlayer.writeBoard('out.svg', board)
-        call(['open', 'out.svg'])
+        #WhitePlayer.writeBoard('out.svg', board)
+        #call(['open', 'out.svg'])
         print '\n'
         time.sleep(2)
 
@@ -40,8 +40,8 @@ def PlayAgents(WhitePlayer, BlackPlayer, debug=False, truncate=False):
 
         if debug:
             print board
-            WhitePlayer.writeBoard('out.svg', board)
-            call(['open', 'out.svg'])
+            #WhitePlayer.writeBoard('out.svg', board)
+            #call(['open', 'out.svg'])
             print '\n'
             time.sleep(2)
 
