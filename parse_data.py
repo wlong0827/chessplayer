@@ -47,7 +47,8 @@ count = 0
 
 assert(len(scores) == len(games))
 
-for i in range(100):#range(len(scores)):
+for i in range(len(scores)):
+	print "Progress", i
 	b = chess.Board()
 	positions = []
 

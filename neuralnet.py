@@ -36,7 +36,7 @@ for i in range(len(X)/100):
 
 # Parameters
 learning_rate = 0.05
-training_epochs = 5
+training_epochs = 50
 display_step = 1
 batch_size = 100
 
