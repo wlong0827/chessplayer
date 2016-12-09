@@ -56,9 +56,9 @@ gpb_test = chessplayer.GreedyPlayer(   'gp-test.svg',
 
 hp = chessplayer.HumanPlayer('hp-out.svg')
 
-#runners.PlayAgents(mpw_test, hp, debug=True)
+runners.PlayAgents(mpw_test, gpb_test, debug=True)
 
-runners.PlayAgents(hp, mpb_test, debug=True)
+#runners.PlayAgents(hp, mpb_test, debug=True)
 
 """
 Generate Statistics
