@@ -6,21 +6,9 @@ lines = file.readlines()
 X = []
 Y = []
 
-def classify(num):
-    result = [0 for _ in range(200)]
-    if num in range(-1200, 1200):
-        if num < 0:
-            num = int((float(num) / 1200) * 100)
-            result[99 - num] = 1
-        else:
-            num = (float(num) / 1200) * 100
-            result[int(num)] = 1
-    return result
-
-
 for line in lines:
     line = line.split("[")
-    Y.append(classify(int(line[0])))
+    Y.append([int(line[0])])
     line = (line[1])[:-2]
     line = line.split(",")
     position = []
@@ -30,7 +18,9 @@ for line in lines:
     X.append(position)
 
 assert(len(X) == len(Y))
-#print "size", len(X)
+
+Y = [Y]
+Y = map(list, zip(*Y))
 
 batches_x = []
 batches_y = []
@@ -43,22 +33,6 @@ for i in range(len(X)/100):
         batches_x.append(X[(100*(i-1)):(100*i)])
         batches_y.append(Y[(100*(i-1)):(100*i)])
 
-"""
-Each line in lines[] looks like:
-18
-[0.2, 0.3, 0.4, 0.5, 0.6, 0.4, 0, 0.2, 
-0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 
-0, 0, 0, 0, 0, 0.3, 0, 0, 
-0, 0, 0, 0, 0, 0, 0, 0, 
-0, 0, 0, 0, 0, 0, 0, 0, 
-0, 0, 0, 0, 0, 0, 0, 0, 
--0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, 
--0.2, -0.3, -0.4, -0.5, -0.6, -0.4, -0.3, -0.2, 
-0]
-
-Here, X = [0.2, ..., 0] and y = 18
-"""
-
 # Parameters
 learning_rate = 0.05
 training_epochs = 3
@@ -68,8 +42,8 @@ batch_size = 100
 # Network Parameters
 n_hidden_1 = 256 # 1st layer number of features
 n_hidden_2 = 256 # 2nd layer number of features
-n_input = 65 # Chess position array: 64 squares + board.turn
-n_classes = 200 # Possible engine scores (-10,000 < score < 10,000)
+n_input = 833 # Chess position array: 64 squares + board.turn
+n_classes = 1
 
 # tf Graph input
 x = tf.placeholder("float", [None, n_input])
@@ -103,7 +77,7 @@ biases = {
 pred = multilayer_perceptron(x, weights, biases)
 
 # Define loss and optimizer
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
+cost = tf.reduce_mean(tf.square(pred - y))
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
 # Initializing the variables
@@ -124,7 +98,6 @@ with tf.Session() as sess:
             batch_x = batches_x[i]
             batch_y = batches_y[i]
 
-            #batch_x = np.reshape(batch_x, (65, 1))
             # Run optimization op (backprop) and cost op (to get loss value)
             _, c = sess.run([optimizer, cost], feed_dict={x: batch_x, y: batch_y})
             # Compute average loss
@@ -150,7 +123,7 @@ with tf.Session() as sess:
 
     for test in tests:
         test = test.split("[")
-        test_y.append(classify(int(test[0])))
+        test_y.append([int(test[0])])
         test = (test[1])[:-2]
         test = test.split(",")
         position = []
@@ -158,9 +131,10 @@ with tf.Session() as sess:
             n = float(test[i])
             position.append(n)
         test_x.append(position)
+
+    test_y = [test_y]
+    test_y = map(list, zip(*test_y))
         
-    print "Accuracy:", accuracy.eval({x: test_x, y: test_y})
-    test_var = [0, 0, 0, 0, 0, 0, 0, 0.6, 0, 0, 0, 0, 0, 0.5, 0, 0.1, 0, 0, 0, 0, 0, 0.1, 0, 0.4, 0.1, 0, 0, 0, 0.1, -0.1, 0, 0, -0.1, 0, 0, 0.1, -0.1, 0, 0, -0.1, 0, 0, 0.1, -0.1, 0, 0, 0, 0, 0, 0, -0.1, 0, 0, 0, -0.5, -0.6, 0, 0, 0, 0, 0, 0, -0.2, 0, 0] 
+    #print "Accuracy:", accuracy.eval({x: test_x, y: test_y})
     
     print sess.run(tf.argmax(pred,1), feed_dict = {x: [test_var]})
-    print classify(-287)

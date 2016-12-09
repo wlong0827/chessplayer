@@ -1,27 +1,26 @@
 import chess
 
-values = {'P': float(0.1), 'R': float(0.2), 'N': float(0.3), 'B': float(0.4), 'Q': float(0.5), 'K': float(0.6),
-'p': float(-0.1), 'r': float(-0.2), 'n': float(-0.3), 'b': float(-0.4), 'q': float(-0.5), 'k': float(-0.6)}
+def onehot(i):
+	result = [0 for _ in range(13)]
+	result[i] = 1
+	return result
 
+values = {'P': onehot(1), 'R': onehot(2), 'N': onehot(3), 'B': onehot(4), 'Q': onehot(5), 'K': onehot(6),
+'p': onehot(7), 'r': onehot(8), 'n': onehot(9), 'b': onehot(10), 'q': onehot(11), 'k': onehot(12)}
+	
 def encode(board):
-
 	result = []
-	#print "------Start--------"
-	#print board
 	for square in range(64):
 		piece = board.piece_at(square)
-		#print str(piece)
 		if str(piece) in values.keys():
-			v = float(values[str(piece)])
-			#print "piece append", v
+			v = values[str(piece)]
 			result.append(v)
 		else:
-			#print "append 0"
-			result.append(0)
+			result.append(onehot(0))
 	
-	result.append(int(board.turn))
-	#print result
-	#print "----------End---------"
+	result.append([int(board.turn)])
+
+	result = [item for sublist in result for item in sublist]
 	return result
 
 f = open('games.txt', "r")
@@ -47,7 +46,8 @@ scores = scores[1:]
 count = 0
 
 assert(len(scores) == len(games))
-for i in range(len(scores)):
+
+for i in range(100):#range(len(scores)):
 	b = chess.Board()
 	positions = []
 
@@ -58,22 +58,29 @@ for i in range(len(scores)):
 	g.pop()
 	s[len(s)-1] = s[len(s)-1].rstrip()
 
-	assert(len(s) == len(g))
-	for j in range(len(s)):
-		try:
-			b.push(chess.Move.from_uci(g[j]))
-			positions.append((int(s[j]), b.copy()))
-		except:
-			print "one messed up"
+	messed_up = 0
+	if len(s) == len(g):
+		for j in range(len(s)):
+			try:
+				b.push(chess.Move.from_uci(g[j]))
+				positions.append((int(s[j]), b.copy()))
+			except:
+				messed_up += 1
 
-	for position in positions:
-		if not position[0] == 0:
-			result = encode(position[1])
-			string = str(position[0]) + str(result) + "\n"
-			count += 1
-			f3.write(string)
+		for position in positions:
+			if not position[0] == 0:
+				result = encode(position[1])
+				string = str(position[0]) + str(result) + "\n"
+				count += 1
+				f3.write(string)
+	else:
+		messed_up += 1
 
-print count
+print "%i messed up" % messed_up
+print "%i worked out" % count
+
+f.close()
+f2.close()
 f3.close()
 
 
