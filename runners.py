@@ -13,9 +13,9 @@ from subprocess import call
 def PlayAgents(WhitePlayer, BlackPlayer, debug=False, truncate=False):
     board = WhitePlayer.board
     if debug:
-        print board
+        WhitePlayer.printGame(board)
         WhitePlayer.writeBoard('out.svg', board)
-        call(['open', 'out.svg'])
+        #call(['open', 'out.svg'])
         print '\n'
         time.sleep(2)
 
@@ -39,9 +39,9 @@ def PlayAgents(WhitePlayer, BlackPlayer, debug=False, truncate=False):
             board.push(move)
 
         if debug:
-            print board
+            WhitePlayer.printGame(board)
             WhitePlayer.writeBoard('out.svg', board)
-            call(['open', 'out.svg'])
+            #call(['open', 'out.svg'])
             print '\n'
             time.sleep(2)
 
@@ -59,7 +59,7 @@ def PlayAgents(WhitePlayer, BlackPlayer, debug=False, truncate=False):
         result = "1/2-1/2"
 
     if debug:
-        print board
+        WhitePlayer.printGame(board)
         print result
         print chess.pgn.Game.from_board(board)
 
