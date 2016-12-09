@@ -19,10 +19,12 @@ MAX_DEPTH = 3
 # stuff for evaluation function
 import pstbs
 MATE_VALUE = 10000
+CASTLE_VALUE = 100
 
 # weights
 mat_weight = 30.0
 pos_weight = 4.0
+cas_weight = 50.0
 
 class ChessPlayer:
     """
@@ -55,7 +57,7 @@ class ChessPlayer:
             self.tbs = None
 
     # SIMPLE FUNCTIONS
-    # -------------------------
+    # ----------------
     def isGameOver(self, board):
         return board.is_game_over(claim_draw=True)
 
@@ -83,6 +85,16 @@ class ChessPlayer:
             return self.values[piece.piece_type]
         return 0
 
+    def getNumPieces(self, board):
+        count = 0
+        for square in chess.SQUARES:
+            if board.piece_at(square):
+                count += 1
+        return count
+
+    # EVALUATION FUNCTION
+    # -------------------
+
     # evaluation function: positive if White is winning
     def getBoardValue(self, board):
         if board.is_checkmate():
@@ -91,28 +103,33 @@ class ChessPlayer:
             else:
                 return -MATE_VALUE
 
-        white_mat, black_mat = self.getMaterial(board)
-        material = white_mat - black_mat
+        material, endgame = self.evalMaterial(board)
 
         # only evaluate position after opening
         if board.fullmove_number > 5:
-            white_pos, black_pos = self.evalPosition(board, white_mat, black_mat)
-            position = white_pos - black_pos
+            position = self.evalPosition(board, endgame)
         else:
-            position = 0
+            position = 0.0
+
+        castle = self.evalCastle(board)
 
         # normalize (to range -1 to 1)
         material = material / 39.0
-        position = position / self.getNumPieces(board)
+        position = position / (self.getNumPieces(board) * 50.0)
+        castle = castle / CASTLE_VALUE
 
-        # print "material total:", (mat_weight * material)
-        # print "position total:", (pos_weight * position)
+        print "material total:", (mat_weight * material)
+        print "position total:", (pos_weight * position)
+        print "castle total:", (cas_weight * castle)
+        print ""
 
-        return (mat_weight * material) + (pos_weight * position)
+        return ((mat_weight * material) + 
+                (pos_weight * position) +
+                (cas_weight * castle))
 
-    def getMaterial(self, board):
-        white_mat = 0
-        black_mat = 0
+    def evalMaterial(self, board):
+        white_mat = 0.0
+        black_mat = 0.0
         for square in chess.SQUARES:
             piece = board.piece_at(square)
             if piece and piece != chess.KING:
@@ -120,14 +137,11 @@ class ChessPlayer:
                     white_mat += self.values[piece.piece_type]
                 else:
                     black_mat += self.values[piece.piece_type]
-        return (white_mat, black_mat)
 
-    def getNumPieces(self, board):
-        count = 0
-        for square in chess.SQUARES:
-            if board.piece_at(square):
-                count += 1
-        return count
+        material = white_mat - black_mat
+        endgame = True if white_mat <= 13 and black_mat <= 13 else False
+
+        return (material, endgame)
 
     def lookupPST(self, square, piece, endgame):
         # king PST depends on game stage and color
@@ -150,13 +164,11 @@ class ChessPlayer:
         else:
             val = pstbs.tables[piece.piece_type][square]
 
-        return val / 50.0
+        return val
 
-    def evalPosition(self, board, white_mat, black_mat):
-        white_pos = 0
-        black_pos = 0
-        endgame = 1 if white_mat <= 13 and black_mat <= 13 else 0 
-
+    def evalPosition(self, board, endgame):
+        white_pos = 0.0
+        black_pos = 0.0
         for square in chess.SQUARES:
             piece = board.piece_at(square)
             if piece:
@@ -165,7 +177,29 @@ class ChessPlayer:
                 else:
                     black_pos += self.lookupPST(square, piece, endgame)
 
-        return (white_pos, black_pos)
+        position = white_pos - black_pos
+
+        return position
+
+    def evalCastle(self, board):
+        move = board.pop()
+        val = 0
+
+        if board.is_castling(move):
+            if board.turn == chess.WHITE:
+                val = CASTLE_VALUE
+            else:
+                val = -CASTLE_VALUE
+
+        board.push(move)
+        return val
+
+    def evalKingSafety(self, board):
+        pass
+
+
+    # MOVING FUNCTIONS
+    # ----------------
 
     def getEndgameMoves(self, board, legal_moves):
         wins = []
@@ -283,7 +317,6 @@ class GreedyPlayer(ChessPlayer):
     def move(self, board):   
         # best_move = (move, value)
         moves = self.getGoodMoves(board)
-        #print moves
         best_move = (None, -float('inf'))
 
         # takes move that maximizes immediate board value
@@ -336,6 +369,7 @@ class MinimaxPlayer(ChessPlayer):
         moves = self.getGoodMoves(board)
         value = (-float('inf'), None)
         for move in moves:
+            assert(board.is_legal(move))
             board_copy = board.copy()
             #self.calculations += 1
             board_copy.push(move)
@@ -362,6 +396,7 @@ class MinimaxPlayer(ChessPlayer):
         moves = self.getGoodMoves(board)
         value = (float('inf'), None)
         for move in moves:
+            assert(board.is_legal(move))
             board_copy = board.copy()
             #self.calculations += 1
             board_copy.push(move)
@@ -385,6 +420,7 @@ class MinimaxPlayer(ChessPlayer):
 
     def value(self, board, depth, player, alpha, beta):
         if depth == 0 or board.is_game_over():
+            #print board.move_stack
             value = self.getBoardValue(board)
             self.calculations += 1
             return (value, board.move_stack)
