@@ -1,3 +1,6 @@
+# -*- encoding: utf-8 -*-
+
+
 # Author: James Baskerville, Vinay Iyengar, Will Long
 # MRU: Dec 07 2016
 # Description: Our CS 182 Final Project is a python program that 
@@ -12,6 +15,7 @@ from chess import polyglot
 from chess import syzygy
 import random
 import os
+import sys
 
 # depth for search
 MAX_DEPTH = 3
@@ -25,6 +29,15 @@ CASTLE_VALUE = 100
 mat_weight = 30.0
 pos_weight = 4.0
 cas_weight = 50.0
+
+transposition_matrix = {}
+
+UNICODE_PIECES = {
+  'r': u'♜', 'n': u'♞', 'b': u'♝', 'q': u'♛',
+  'k': u'♚', 'p': u'♟', 'R': u'♖', 'N': u'♘',
+  'B': u'♗', 'Q': u'♕', 'K': u'♔', 'P': u'♙',
+  None: ' '
+}
 
 class ChessPlayer:
     """
@@ -66,8 +79,43 @@ class ChessPlayer:
         f.write(chess.svg.board(board = chessboard))
         f.close()
 
-    def printGame(self):
-        print self.game
+    def printGame(self, board):
+        #print self.game
+        count = 0
+
+        print "a  b  c  d  e  f  g  h\n"
+        for square in chess.SQUARES:
+            piece = board.piece_at(square)
+
+            if not piece:
+                sys.stdout.write("." + "  ")
+            elif piece.piece_type == chess.ROOK and piece.color == chess.BLACK:
+                sys.stdout.write(UNICODE_PIECES['r'] + "  ")
+            elif piece.piece_type == chess.KNIGHT and piece.color == chess.BLACK:
+                sys.stdout.write(UNICODE_PIECES['n'] + "  ")
+            elif piece.piece_type == chess.BISHOP and piece.color == chess.BLACK:
+                sys.stdout.write(UNICODE_PIECES['b'] + "  ")
+            elif piece.piece_type == chess.QUEEN and piece.color == chess.BLACK:
+                sys.stdout.write(UNICODE_PIECES['q'] + "  ")
+            elif piece.piece_type == chess.KING and piece.color == chess.BLACK:
+                sys.stdout.write(UNICODE_PIECES['k'] + "  ")
+            elif piece.piece_type == chess.PAWN and piece.color == chess.BLACK:
+                sys.stdout.write(UNICODE_PIECES['p'] + "  ")
+            elif piece.piece_type == chess.ROOK and piece.color == chess.WHITE:
+                sys.stdout.write(UNICODE_PIECES['R'] + "  ")
+            elif piece.piece_type == chess.KNIGHT and piece.color == chess.WHITE:
+                sys.stdout.write(UNICODE_PIECES['N'] + "  ")
+            elif piece.piece_type == chess.BISHOP and piece.color == chess.WHITE:
+                sys.stdout.write(UNICODE_PIECES['B'] + "  ")
+            elif piece.piece_type == chess.QUEEN and piece.color == chess.WHITE:
+                sys.stdout.write(UNICODE_PIECES['Q'] + "  ")
+            elif piece.piece_type == chess.KING and piece.color == chess.WHITE:
+                sys.stdout.write(UNICODE_PIECES['K'] + "  ")
+            elif piece.piece_type == chess.PAWN and piece.color == chess.WHITE:
+                sys.stdout.write(UNICODE_PIECES['P'] + "  ")
+            count += 1
+            if count % 8 == 0:
+                print str(count/8) + "\n"
 
     def exit(self):
         if self.reader:
@@ -103,6 +151,9 @@ class ChessPlayer:
             else:
                 return -MATE_VALUE
 
+        if board.zobrist_hash() in transposition_matrix:
+            return transposition_matrix[board.zobrist_hash()]
+
         material, endgame = self.evalMaterial(board)
 
         # only evaluate position after opening
@@ -123,9 +174,10 @@ class ChessPlayer:
         print "castle total:", (cas_weight * castle)
         print ""
 
-        return ((mat_weight * material) + 
-                (pos_weight * position) +
-                (cas_weight * castle))
+
+        transposition_matrix[board.zobrist_hash()] = (mat_weight * material) + (pos_weight * position) + (cas_weight * castle)
+        return transposition_matrix[board.zobrist_hash()]
+
 
     def evalMaterial(self, board):
         white_mat = 0.0
