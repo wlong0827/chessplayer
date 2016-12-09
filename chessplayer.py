@@ -111,21 +111,21 @@ class ChessPlayer:
         else:
             position = 0.0
 
-        castle = self.evalCastle(board)
+        #castle = self.evalCastle(board)
 
         # normalize (to range -1 to 1)
         material = material / 39.0
         position = position / (self.getNumPieces(board) * 50.0)
-        castle = castle / CASTLE_VALUE
+        #castle = castle / CASTLE_VALUE
 
-        print "material total:", (mat_weight * material)
-        print "position total:", (pos_weight * position)
-        print "castle total:", (cas_weight * castle)
-        print ""
+        #print "material total:", (mat_weight * material)
+        #print "position total:", (pos_weight * position)
+        #print "castle total:", (cas_weight * castle)
+        #print ""
 
         return ((mat_weight * material) + 
-                (pos_weight * position) +
-                (cas_weight * castle))
+                (pos_weight * position))# +
+                #(cas_weight * castle))
 
     def evalMaterial(self, board):
         white_mat = 0.0
@@ -181,21 +181,21 @@ class ChessPlayer:
 
         return position
 
-    def evalCastle(self, board):
-        move = board.pop()
-        val = 0
+    # def evalCastle(self, board):
+    #     move = board.pop()
+    #     val = 0
 
-        if board.is_castling(move):
-            if board.turn == chess.WHITE:
-                val = CASTLE_VALUE
-            else:
-                val = -CASTLE_VALUE
+    #     if board.is_castling(move):
+    #         if board.turn == chess.WHITE:
+    #             val = CASTLE_VALUE
+    #         else:
+    #             val = -CASTLE_VALUE
 
-        board.push(move)
-        return val
+    #     board.push(move)
+    #     return val
 
-    def evalKingSafety(self, board):
-        pass
+    # def evalKingSafety(self, board):
+    #     pass
 
 
     # MOVING FUNCTIONS
@@ -242,37 +242,23 @@ class ChessPlayer:
         # endgame tablebases
         if self.tbs and self.getNumPieces(board) <= 5:
             moves = self.getEndgameMoves(board, moves)
-            #if moves:
-                #print "used endgame:", moves
+            if moves:
+                print "used endgame:", moves
         # opening book
         elif self.reader and self.board.fullmove_number <= 10:
             moves = [entry.move() for entry in self.reader.find_all(board)
                         if entry.move() in legal_moves]
-            #print "used opening:", moves
         else:
             moves = legal_moves
-            #print "standard"
 
         if moves:
             return moves
         else:
-            #print "jk, used standard"
             return legal_moves
 
     # overwritten by engines
     def move(self, board):
         pass
-
-    # def play(self):
-    #     board = self.board
-
-    #     while not self.isGameOver(board):
-    #         move = self.move(board)
-    #         board.push(move)
-
-    #     self.game = chess.pgn.Game.from_board(self.board)
-
-    #     self.writeBoard(self.file)
 
 """
     RandomPlayer plays a random legal move at each step until
@@ -323,14 +309,12 @@ class GreedyPlayer(ChessPlayer):
         for move in moves:
             board.push(move)
             value = self.getBoardValue(board) * self.value_sign
-            #print value
             if value > best_move[1]:
                 best_move = (move, value)
             board.pop()
 
         # act randomly if no value change is possible
         if self.getBoardValue(board) == best_move[1]:
-            #print "rand"
             return moves[random.randint(0, len(moves) - 1)]
         
         return best_move[0]
@@ -381,7 +365,6 @@ class MinimaxPlayer(ChessPlayer):
                 len(new_val[1]) < len(value[1]) and new_val[0] > 0):
                 value = new_val
             if value[0] >= beta:
-                #print "max cut"
                 return value
             alpha = max(alpha, value[0])
             if (value[0] == MATE_VALUE and 
@@ -389,7 +372,6 @@ class MinimaxPlayer(ChessPlayer):
                 depth == MAX_DEPTH):
                 print "yes"
                 return value
-        #print "max value", value[0]
         return value
 
     def minMove(self, board, depth, player, alpha, beta):
@@ -398,9 +380,7 @@ class MinimaxPlayer(ChessPlayer):
         for move in moves:
             assert(board.is_legal(move))
             board_copy = board.copy()
-            #self.calculations += 1
             board_copy.push(move)
-            # value = min(value, self.move(board_copy, depth - 1, player))
             new_val = self.value(board_copy, depth - 1, player, alpha, beta)
             if new_val[0] < value[0]:
                 value = new_val
@@ -408,27 +388,22 @@ class MinimaxPlayer(ChessPlayer):
                 len(new_val[1]) < len(value[1]) and new_val[0] < 0):
                 value = new_val
             if value[0] <= alpha:
-                #print "min cut"
                 return value
             beta = min(beta, value[0])
             if (value[0] == -MATE_VALUE and 
                 board_copy.is_checkmate() and
                 depth == MAX_DEPTH):
                 return value
-        #print "min value", value[0]
         return value
 
     def value(self, board, depth, player, alpha, beta):
         if depth == 0 or board.is_game_over():
-            #print board.move_stack
             value = self.getBoardValue(board)
             self.calculations += 1
             return (value, board.move_stack)
         if board.turn == player: 
-            #print "asking max"
             return self.maxMove(board, depth, player, alpha, beta)
         else:
-            #print "asking min"
             return self.minMove(board, depth, player, alpha, beta)
 
     def move(self, board, depth=MAX_DEPTH, player=chess.WHITE):
@@ -437,7 +412,6 @@ class MinimaxPlayer(ChessPlayer):
         value, moves = self.value(board, depth, player, alpha, beta)
         print "minimax value: ", value
         move = moves[self.half_moves]
-        #print "calcs", self.calculations
         self.half_moves += 2
         return move
 

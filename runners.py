@@ -50,7 +50,7 @@ def PlayAgents(WhitePlayer, BlackPlayer, debug=False, truncate=False):
             stop_cond = (board.fullmove_number > 20 or board.is_game_over(claim_draw=True))
 
     if not truncate:
-        result = board.result
+        result = board.result(claim_draw=True)
     elif WhitePlayer.getBoardValue(board) > 1:
         result = "1-0"
     elif BlackPlayer.getBoardValue(board) > 1:
@@ -69,42 +69,6 @@ def PlayAgents(WhitePlayer, BlackPlayer, debug=False, truncate=False):
 
     return result
 
-# def playAgents(WhitePlayer, BlackPlayer, debug=False):
-#     board = WhitePlayer.board
-#     if debug:
-#         print board
-#         print '\n'
-
-#     while not board.is_game_over(claim_draw=True):
-#         WhitePlayer.writeBoard('out.svg', board)
-
-#         if board.turn == chess.WHITE:
-#             if debug:
-#                 print "Move:", board.fullmove_number
-#             move = WhitePlayer.move(board)
-#             if debug:
-#                 print "White's move: {}".format(move)
-#             board.push(move)
-#         else:
-#             move = BlackPlayer.move(board)
-#             if debug:
-#                 print "Black's move: {}".format(move)
-#             board.push(move)
-
-#         if debug:
-#             print board
-#             print '\n'
-#             time.sleep(1)
-
-#     if debug:
-#         print board
-#         print board.result()
-#         print chess.pgn.Game.from_board(board)
-
-    
-
-#     return board.result()
-
 """
     calcStats:
     Used to generate statistics about the matchup of two players.
@@ -120,14 +84,14 @@ def calcStats((white1, black1), (white2, black2),
                 games_per_side, log=False, trunc=False):
     if log:
         logfile = open('stats.log', 'a')
-        logfile.write("Running Tests: {} vs {}", white1, black1)
+        logfile.write("Running Tests: {} vs {}".format(white1, black1))
     wins = 0
     draws = 0
     losses = 0
     total = 0
     for _ in xrange(games_per_side):
         # white1 vs. black1
-        result = chessplayer.PlayAgents(white1, black1, truncate=trunc)
+        result = PlayAgents(white1, black1, truncate=trunc)
 
         if result == '1-0':
             wins += 1
@@ -141,21 +105,21 @@ def calcStats((white1, black1), (white2, black2),
             logfile.write(str([total, wins, losses, draws, float(wins) / total]))
 
         # white2 vs. black2
-        result = chessplayer.PlayAgents(white2, black2, truncate=trunc)
+        result = PlayAgents(white2, black2, truncate=trunc)
 
         if result == '1-0':
-            wins += 1
+            losses += 1
         elif result == '1/2-1/2':
             draws += 1
         else:
-            losses += 1
+            wins += 1
         total += 1
 
         if log:
             logfile.write([total, wins, losses, draws, float(wins) / total])
 
     if log:
-        logfile.write("Done with {} vs. {}", white1, black1)
+        logfile.write("Done with {} vs. {}".format(white1, black1))
         logfile.close()
 
     return [total, wins, losses, draws, float(wins) / total]
