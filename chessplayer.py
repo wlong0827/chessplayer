@@ -21,6 +21,7 @@ import tensorflow as tf
 # depth for search
 MAX_DEPTH = 3
 
+<<<<<<< HEAD
 # stuff for evaluation function
 import pstbs
 MATE_VALUE = 10000
@@ -31,6 +32,21 @@ mat_weight = 30.0
 pos_weight = 4.0
 cas_weight = 50.0
 
+=======
+# depth for search
+MAX_DEPTH = 3
+
+# stuff for evaluation function
+import pstbs
+MATE_VALUE = 10000
+CASTLE_VALUE = 100
+
+# weights
+mat_weight = 30.0
+pos_weight = 4.0
+cas_weight = 50.0
+
+>>>>>>> 6f45a06fa9d229ff6de4eca54631a6ccfb60cb9b
 UNICODE_PIECES = {
   'r': u'♜', 'n': u'♞', 'b': u'♝', 'q': u'♛',
   'k': u'♚', 'p': u'♟', 'R': u'♖', 'N': u'♘',
@@ -181,6 +197,11 @@ class ChessPlayer:
         self.transposition_matrix[zobrist_hash] = result
         return result
 
+<<<<<<< HEAD
+=======
+>>>>>>> a502b83ae799e58c7194bb364194f96c2985cd97
+
+>>>>>>> 6f45a06fa9d229ff6de4eca54631a6ccfb60cb9b
     def evalMaterial(self, board):
         white_mat = 0.0
         black_mat = 0.0
