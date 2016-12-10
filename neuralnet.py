@@ -2,9 +2,9 @@ import tensorflow as tf
 
 # Parameters
 learning_rate = 0.05
-training_epochs = 100
+training_epochs = 75
 display_step = 1
-batch_size = 100000
+batch_size = 5000
 
 # Network Parameters
 n_hidden_1 = 256 # 1st layer number of features
@@ -52,45 +52,41 @@ init = tf.global_variables_initializer()
 
 saver = tf.train.Saver()
 
-def getNextBatch(line_number, batch_size):
-    file = open("train.txt", "r")
-    lines = file.readlines()
-    X = []
-    Y = []
-    batch_size += line_number
-    total_lines = len(lines)
+# --------------------- File Parsing -------------------------------
 
-    while line_number < batch_size:
-        print "Progress: %i / %i" % (line_number,  total_lines) 
-        line = lines[line_number]
-        line = line.split("[")
-        Y.append(int(line[0]))
-        line = (line[1])[:-2]
-        line = line.split(",")
-        position = []
+file = open("train.txt", "r")
+lines = file.readlines()
+X = []; Y = []
+total_lines = 1000000#len(lines)
 
-        for i in range(len(line)):
-            n = float(line[i])
-            position.append(n)
-        X.append(position)
-        line_number += 1
+for l in range(total_lines):
+    print "Progress: %i / %i" % (l + 1,  total_lines) 
+    line = lines[l]
+    line = line.split("[")
+    Y.append(int(line[0]))
+    line = (line[1])[:-2]
+    line = line.split(",")
+    position = []
 
-    file.close()
-    assert(len(X) == len(Y))
-    Y = map(list, zip(*[Y]))
+    for i in range(len(line)):
+        n = float(line[i])
+        position.append(n)
+    X.append(position)
 
-    # batches_x = []
-    # batches_y = []
+file.close()
+assert(len(X) == len(Y))
+Y = map(list, zip(*[Y]))
 
-    # for i in range(batch_size):
-    #     if i == 0:
-    #         batches_x.append(X[:100])
-    #         batches_y.append(Y[:100])
-    #     else:
-    #         batches_x.append(X[(100*(i-1)):(100*i)])
-    #         batches_y.append(Y[(100*(i-1)):(100*i)])
+batches_x = []
+batches_y = []
 
-    return (X, Y)
+for i in range(len(X)/batch_size):
+    if i == 0:
+        batches_x.append(X[:batch_size])
+        batches_y.append(Y[:batch_size])
+    else:
+        batches_x.append(X[(batch_size * (i - 1)):(batch_size * i)])
+        batches_y.append(Y[(batch_size * (i - 1)):(batch_size * i)])
 
 # Launch the graph
 with tf.Session() as sess:
@@ -100,10 +96,11 @@ with tf.Session() as sess:
     for epoch in range(training_epochs):
         avg_cost = 0.
         # Loop over all batches
-        total_batch = 2000000 #3875492
+        total_batch = len(batches_x) #3875492
         i = 0
-        while i < total_batch:
-            batch_x, batch_y = getNextBatch(i, batch_size)
+        for i in range(total_batch):
+            batch_x = batches_x[i]
+            batch_y = batches_y[i]
 
             # Run optimization op (backprop) and cost op (to get loss value)
             _, c = sess.run([optimizer, cost], feed_dict={x: batch_x, y: batch_y})
