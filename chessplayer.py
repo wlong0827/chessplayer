@@ -197,11 +197,6 @@ class ChessPlayer:
         self.transposition_matrix[zobrist_hash] = result
         return result
 
-<<<<<<< HEAD
-=======
->>>>>>> a502b83ae799e58c7194bb364194f96c2985cd97
-
->>>>>>> 6f45a06fa9d229ff6de4eca54631a6ccfb60cb9b
     def evalMaterial(self, board):
         white_mat = 0.0
         black_mat = 0.0
@@ -490,6 +485,38 @@ class MinimaxPlayer(ChessPlayer):
         self.half_moves += 2
         return move
 
+def onehot(i):
+    result = [0 for _ in range(13)]
+    result[i] = 1
+    return result
+    
+def encode(board):
+    result = []
+    for square in range(64):
+        piece = board.piece_at(square)
+        if str(piece) in values.keys():
+            v = values[str(piece)]
+            result.append(v)
+        else:
+            result.append(onehot(0))
+    
+    result.append([int(board.turn)])
+
+    result = [item for sublist in result for item in sublist]
+    return result
+
+# Create model
+def multilayer_perceptron(x, weights, biases):
+    # Hidden layer with RELU activation
+    layer_1 = tf.add(tf.matmul(x, weights['h1']), biases['b1'])
+    layer_1 = tf.nn.relu(layer_1)
+    # Hidden layer with RELU activation
+    layer_2 = tf.add(tf.matmul(layer_1, weights['h2']), biases['b2'])
+    layer_2 = tf.nn.relu(layer_2)
+    # Output layer with linear activation
+    out_layer = tf.matmul(layer_2, weights['out']) + biases['out']
+    return out_layer
+
 class GreedyNNPlayer(GreedyPlayer):
 
     def __init__(self, outfile, fen=chess.STARTING_FEN):
@@ -500,6 +527,8 @@ class GreedyNNPlayer(GreedyPlayer):
         self.tbs = None
         self.half_moves = 0
         self.transposition_matrix = {}
+        self.values = {'P': onehot(1), 'R': onehot(2), 'N': onehot(3), 'B': onehot(4), 'Q': onehot(5), 'K': onehot(6),
+                        'p': onehot(7), 'r': onehot(8), 'n': onehot(9), 'b': onehot(10), 'q': onehot(11), 'k': onehot(12)}
 
         # Network Parameters
         n_hidden_1 = 256 # 1st layer number of features
@@ -510,18 +539,6 @@ class GreedyNNPlayer(GreedyPlayer):
         # tf Graph input
         x = tf.placeholder("float", [None, n_input])
         y = tf.placeholder("float", [None, n_classes])
-
-        # Create model
-        def multilayer_perceptron(x, weights, biases):
-            # Hidden layer with RELU activation
-            layer_1 = tf.add(tf.matmul(x, weights['h1']), biases['b1'])
-            layer_1 = tf.nn.relu(layer_1)
-            # Hidden layer with RELU activation
-            layer_2 = tf.add(tf.matmul(layer_1, weights['h2']), biases['b2'])
-            layer_2 = tf.nn.relu(layer_2)
-            # Output layer with linear activation
-            out_layer = tf.matmul(layer_2, weights['out']) + biases['out']
-            return out_layer
 
         # Store layers weight & bias
         weights = {
@@ -540,13 +557,14 @@ class GreedyNNPlayer(GreedyPlayer):
 
         saver = tf.train.Saver()
 
-        with tf.Session() as sess:
+        with tf.Session() as self.sess:
             # restore variables from disk
             saver.restore(sess, "./chess-ann.ckpt")
-            print sess.run(pred, feed_dict = {x: [test_var]})
+            #print sess.run(pred, feed_dict = {x: [test_var]})
 
     def getBoardValue(self, board):
-        pass
+        b = encode(board)
+        return sess.run(pred, feed_dict = {x: [b]})
 
 class MinMaxNNPlayer(MinimaxPlayer):
 
