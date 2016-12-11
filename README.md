@@ -16,7 +16,8 @@ Usage: `python main.py -w <white> -b <black> -s <svgfile> -f <fen>`
 | `<svgfile>` | outfile for svgs              | `""` (no svg)        |
 | `<fen>`     | FEN for custom board position | `chess.STARTING_FEN` |
 
-Player types: Human (hp), Random (rp), Greedy (gp), Minimax (mp), ANN (nn)
+Player types: Human (`hp`), Random (`rp`), 
+Greedy (`gp`), Minimax (`mp`), ANN (`nn`)
 
 Example: `python main.py -w hp -b mp -s game.svg -f '8/8/8/4p3/8/4k3/8/4K3 b - - 0 1'`
 
