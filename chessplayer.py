@@ -28,7 +28,7 @@ CASTLE_VALUE = 100
 
 # weights
 mat_weight = 30.0
-pos_weight = 4.0
+pos_weight = 8.0
 cas_weight = 50.0
 
 UNICODE_PIECES = {
@@ -375,6 +375,7 @@ class GreedyPlayer(ChessPlayer):
         for move in moves:
             board.push(move)
             value = self.getBoardValue(board) * self.value_sign
+            print value
             if value > best_move[1]:
                 best_move = (move, value)
             board.pop()
@@ -524,11 +525,29 @@ class GreedyNNPlayer(GreedyPlayer):
         self.outfile = outfile
         self.board = chess.Board(fen)
         self.game = chess.pgn.Game()
-        self.reader = None
-        self.tbs = None
         self.half_moves = 0
         self.transposition_matrix = {}
-        self.value_sign = 1
+        self.value_sign = 1 if player == chess.WHITE else -1
+        self.values = { chess.PAWN : 1, 
+                chess.ROOK : 5, 
+                chess.KNIGHT : 3, 
+                chess.BISHOP : 3, 
+                chess.QUEEN: 9, 
+                chess.KING : MATE_VALUE }
+
+        if isinstance(book, basestring) and book != "":
+            self.initOpeningBook(book)
+        elif book == True:
+            self.initOpeningBook()
+        else:
+            self.reader = None
+
+        if isinstance(directory, basestring) and directory != "":
+            self.initTablebases(directory)
+        elif directory == True:
+            self.initTablebases()
+        else:
+            self.tbs = None
 
         # Network Parameters
         n_hidden_1 = 256 # 1st layer number of features
@@ -562,7 +581,32 @@ class GreedyNNPlayer(GreedyPlayer):
         saver.restore(self.sess, "./chess-ann.ckpt")
 
     def getBoardValue(self, board):
-        return self.sess.run(self.pred, feed_dict = {self.x: [encode(board)]})
+        if board.is_checkmate():
+            if board.result() == "1-0":
+                return MATE_VALUE
+            else:
+                return -MATE_VALUE
+
+        material, endgame = self.evalMaterial(board)
+
+        # only evaluate position after opening
+        if board.fullmove_number > 5:
+            position = self.evalPosition(board, endgame)
+        else:
+            position = 0.0
+
+        # normalize (to range -1 to 1)
+        material = material / 39.0
+        position = position / (self.getNumPieces(board) * 50.0)
+
+        b = encode(board)
+        assert len(b) == 833
+        nnval = self.sess.run(self.pred, feed_dict = {self.x: [b]}) / 100.0
+        nnweight = 10.0
+
+        result = ((mat_weight * material) + (pos_weight * position) + (nnweight * nnval))
+
+        return result
 
     def exit(self):
         if self.reader:
@@ -573,8 +617,100 @@ class GreedyNNPlayer(GreedyPlayer):
 
 class MinMaxNNPlayer(MinimaxPlayer):
 
+    def __init__(self, outfile, fen=chess.STARTING_FEN, player=chess.WHITE, book="", directory=""):
+        self.outfile = outfile
+        self.board = chess.Board(fen)
+        self.game = chess.pgn.Game()
+        self.half_moves = 0
+        self.transposition_matrix = {}
+        self.half_moves = 0 if player == chess.WHITE else 1
+        self.calculations = 0
+        self.values = { chess.PAWN : 1, 
+                chess.ROOK : 5, 
+                chess.KNIGHT : 3, 
+                chess.BISHOP : 3, 
+                chess.QUEEN: 9, 
+                chess.KING : MATE_VALUE }
+
+        if isinstance(book, basestring) and book != "":
+            self.initOpeningBook(book)
+        elif book == True:
+            self.initOpeningBook()
+        else:
+            self.reader = None
+
+        if isinstance(directory, basestring) and directory != "":
+            self.initTablebases(directory)
+        elif directory == True:
+            self.initTablebases()
+        else:
+            self.tbs = None
+
+        # Network Parameters
+        n_hidden_1 = 256 # 1st layer number of features
+        n_hidden_2 = 256 # 2nd layer number of features
+        n_input = 833 # Chess position array: 64 squares + board.turn
+        n_classes = 1 # Possible engine scores (-10,000 < score < 10,000)
+
+        # tf Graph input
+        self.x = tf.placeholder("float", [None, n_input])
+        self.y = tf.placeholder("float", [None, n_classes])
+
+        # Store layers weight & bias
+        weights = {
+            'h1': tf.Variable(tf.random_normal([n_input, n_hidden_1])),
+            'h2': tf.Variable(tf.random_normal([n_hidden_1, n_hidden_2])),
+            'out': tf.Variable(tf.random_normal([n_hidden_2, n_classes]))
+        }
+        biases = {
+            'b1': tf.Variable(tf.random_normal([n_hidden_1])),
+            'b2': tf.Variable(tf.random_normal([n_hidden_2])),
+            'out': tf.Variable(tf.random_normal([n_classes]))
+        }
+
+        # Construct model
+        self.pred = multilayer_perceptron(self.x, weights, biases)
+
+        saver = tf.train.Saver()
+
+        self.sess = tf.Session()
+
+        saver.restore(self.sess, "./chess-ann.ckpt")
+
     def getBoardValue(self, board):
-        pass
+        if board.is_checkmate():
+            if board.result() == "1-0":
+                return MATE_VALUE
+            else:
+                return -MATE_VALUE
+
+        material, endgame = self.evalMaterial(board)
+
+        # only evaluate position after opening
+        if board.fullmove_number > 5:
+            position = self.evalPosition(board, endgame)
+        else:
+            position = 0.0
+
+        # normalize (to range -1 to 1)
+        material = material / 39.0
+        position = position / (self.getNumPieces(board) * 50.0)
+
+        b = encode(board)
+        assert len(b) == 833
+        nnval = self.sess.run(self.pred, feed_dict = {self.x: [b]}) / 100.0
+        nnweight = 10.0
+
+        result = ((mat_weight * material) + (pos_weight * position) + (nnweight * nnval))
+
+        return result
+
+    def exit(self):
+        if self.reader:
+            self.reader.close()
+        if self.tbs:
+            self.tbs.close()
+        self.sess.close()
 
 class HumanPlayer(ChessPlayer):
 
