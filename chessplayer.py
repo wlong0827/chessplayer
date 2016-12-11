@@ -514,7 +514,7 @@ class GreedyNNPlayer(GreedyPlayer):
         self.half_moves = 0
         self.transposition_matrix = {}
         self.value_sign = 1
-
+g
         # Network Parameters
         n_hidden_1 = 256 # 1st layer number of features
         n_hidden_2 = 256 # 2nd layer number of features
