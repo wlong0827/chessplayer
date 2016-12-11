@@ -16,6 +16,7 @@ from chess import syzygy
 import random
 import os
 import sys
+import tensorflow as tf
 
 # depth for search
 MAX_DEPTH = 3
@@ -481,10 +482,92 @@ class MinimaxPlayer(ChessPlayer):
         self.half_moves += 2
         return move
 
+def onehot(i):
+    result = [0 for _ in range(13)]
+    result[i] = 1
+    return result
+    
+def encode(board):
+    values = {'P': onehot(1), 'R': onehot(2), 'N': onehot(3), 'B': onehot(4), 'Q': onehot(5), 'K': onehot(6),
+                'p': onehot(7), 'r': onehot(8), 'n': onehot(9), 'b': onehot(10), 'q': onehot(11), 'k': onehot(12)}
+    result = []
+    for square in range(64):
+        piece = board.piece_at(square)
+        if str(piece) in values.keys():
+            v = values[str(piece)]
+            result.append(v)
+        else:
+            result.append(onehot(0))
+    
+    result.append([int(board.turn)])
+
+    result = [item for sublist in result for item in sublist]
+    return result
+
+# Create model
+def multilayer_perceptron(x, weights, biases):
+    # Hidden layer with RELU activation
+    layer_1 = tf.add(tf.matmul(x, weights['h1']), biases['b1'])
+    layer_1 = tf.nn.relu(layer_1)
+    # Hidden layer with RELU activation
+    layer_2 = tf.add(tf.matmul(layer_1, weights['h2']), biases['b2'])
+    layer_2 = tf.nn.relu(layer_2)
+    # Output layer with linear activation
+    out_layer = tf.matmul(layer_2, weights['out']) + biases['out']
+    return out_layer
+
 class GreedyNNPlayer(GreedyPlayer):
 
+    def __init__(self, outfile, fen=chess.STARTING_FEN, player=chess.WHITE, book="", directory=""):
+        self.outfile = outfile
+        self.board = chess.Board(fen)
+        self.game = chess.pgn.Game()
+        self.reader = None
+        self.tbs = None
+        self.half_moves = 0
+        self.transposition_matrix = {}
+        self.value_sign = 1
+
+        # Network Parameters
+        n_hidden_1 = 256 # 1st layer number of features
+        n_hidden_2 = 256 # 2nd layer number of features
+        n_input = 833 # Chess position array: 64 squares + board.turn
+        n_classes = 1 # Possible engine scores (-10,000 < score < 10,000)
+
+        # tf Graph input
+        self.x = tf.placeholder("float", [None, n_input])
+        self.y = tf.placeholder("float", [None, n_classes])
+
+        # Store layers weight & bias
+        weights = {
+            'h1': tf.Variable(tf.random_normal([n_input, n_hidden_1])),
+            'h2': tf.Variable(tf.random_normal([n_hidden_1, n_hidden_2])),
+            'out': tf.Variable(tf.random_normal([n_hidden_2, n_classes]))
+        }
+        biases = {
+            'b1': tf.Variable(tf.random_normal([n_hidden_1])),
+            'b2': tf.Variable(tf.random_normal([n_hidden_2])),
+            'out': tf.Variable(tf.random_normal([n_classes]))
+        }
+
+        # Construct model
+        self.pred = multilayer_perceptron(self.x, weights, biases)
+
+        # saver = tf.train.Saver()
+
+        # with tf.Session() as self.sess:
+        #     # restore variables from disk
+        #     saver.restore(self.sess, "./chess-ann.ckpt")
+        #     #print sess.run(pred, feed_dict = {x: [test_var]})
+
     def getBoardValue(self, board):
-        pass
+        saver = tf.train.Saver()
+
+        with tf.Session() as sess:
+            # restore variables from disk
+            saver.restore(sess, "./chess-ann.ckpt")
+            b = encode(board)
+            return sess.run(self.pred, feed_dict = {self.x: [b]})
 
 class MinMaxNNPlayer(MinimaxPlayer):
 
