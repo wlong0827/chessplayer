@@ -475,6 +475,8 @@ def onehot(i):
     return result
     
 def encode(board):
+    values = {'P': onehot(1), 'R': onehot(2), 'N': onehot(3), 'B': onehot(4), 'Q': onehot(5), 'K': onehot(6),
+                'p': onehot(7), 'r': onehot(8), 'n': onehot(9), 'b': onehot(10), 'q': onehot(11), 'k': onehot(12)}
     result = []
     for square in range(64):
         piece = board.piece_at(square)
@@ -503,7 +505,7 @@ def multilayer_perceptron(x, weights, biases):
 
 class GreedyNNPlayer(GreedyPlayer):
 
-    def __init__(self, outfile, fen=chess.STARTING_FEN):
+    def __init__(self, outfile, fen=chess.STARTING_FEN, player=chess.WHITE, book="", directory=""):
         self.outfile = outfile
         self.board = chess.Board(fen)
         self.game = chess.pgn.Game()
@@ -511,8 +513,7 @@ class GreedyNNPlayer(GreedyPlayer):
         self.tbs = None
         self.half_moves = 0
         self.transposition_matrix = {}
-        self.values = {'P': onehot(1), 'R': onehot(2), 'N': onehot(3), 'B': onehot(4), 'Q': onehot(5), 'K': onehot(6),
-                        'p': onehot(7), 'r': onehot(8), 'n': onehot(9), 'b': onehot(10), 'q': onehot(11), 'k': onehot(12)}
+        self.value_sign = 1
 
         # Network Parameters
         n_hidden_1 = 256 # 1st layer number of features
@@ -521,8 +522,8 @@ class GreedyNNPlayer(GreedyPlayer):
         n_classes = 1 # Possible engine scores (-10,000 < score < 10,000)
 
         # tf Graph input
-        x = tf.placeholder("float", [None, n_input])
-        y = tf.placeholder("float", [None, n_classes])
+        self.x = tf.placeholder("float", [None, n_input])
+        self.y = tf.placeholder("float", [None, n_classes])
 
         # Store layers weight & bias
         weights = {
@@ -537,18 +538,23 @@ class GreedyNNPlayer(GreedyPlayer):
         }
 
         # Construct model
-        self.pred = multilayer_perceptron(x, weights, biases)
+        self.pred = multilayer_perceptron(self.x, weights, biases)
 
-        saver = tf.train.Saver()
+        # saver = tf.train.Saver()
 
-        with tf.Session() as self.sess:
-            # restore variables from disk
-            saver.restore(sess, "./chess-ann.ckpt")
-            #print sess.run(pred, feed_dict = {x: [test_var]})
+        # with tf.Session() as self.sess:
+        #     # restore variables from disk
+        #     saver.restore(self.sess, "./chess-ann.ckpt")
+        #     #print sess.run(pred, feed_dict = {x: [test_var]})
 
     def getBoardValue(self, board):
-        b = encode(board)
-        return sess.run(pred, feed_dict = {x: [b]})
+        saver = tf.train.Saver()
+
+        with tf.Session() as sess:
+            # restore variables from disk
+            saver.restore(sess, "./chess-ann.ckpt")
+            b = encode(board)
+            return sess.run(self.pred, feed_dict = {self.x: [b]})
 
 class MinMaxNNPlayer(MinimaxPlayer):
 

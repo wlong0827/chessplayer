@@ -29,7 +29,6 @@ mpb_book = chessplayer.MinimaxPlayer('mpb-book-out.svg', player=chess.BLACK, boo
 mpw_dir = chessplayer.MinimaxPlayer('mpw-dir-out.svg', player=chess.WHITE, book=True, directory=True)
 mpb_dir = chessplayer.MinimaxPlayer('mpb-dir-out.svg', player=chess.BLACK, book=True, directory=True)
 
-
 """
 Do Testing
 ----------
@@ -49,25 +48,26 @@ start_fen = chess.STARTING_FEN
 #                                         book        = True,
 #                                         directory   = True )
 
-gpb_test = chessplayer.GreedyPlayer(   'gp-test.svg', 
-                                        fen         = start_fen,
-                                        player      = chess.BLACK,
-                                        book        = True,
-                                        directory   = True )
+#gpb_test = chessplayer.GreedyPlayer(   'gp-test.svg', 
+#                                        fen         = start_fen,
+#                                        player      = chess.BLACK,
+#                                        book        = True,
+#                                        directory   = True )
 
 #runners.PlayAgents(rp, gpb_test, debug=True)
 
-# hp = chessplayer.HumanPlayer('hp-out.svg')
+hp = chessplayer.HumanPlayer('hp-out.svg')
 
 # runners.PlayAgents(mpw_test, mpb_test, debug=True)
 
-# runners.PlayAgents(hp, mpb_test, debug=True)
+nn = chessplayer.GreedyNNPlayer('nn-test.svg', fen = start_fen, player=chess.WHITE)
 
+runners.PlayAgents(nn, hp, debug=True)
 """
 Generate Statistics
 --------------
 """
-
+"""
 stats = []
 
 # stats.append(['Greedy vs. Random'] + runners.calcStats((gpw, rp), (rp, gpb), 100))
@@ -88,3 +88,4 @@ for row in stats:
     table.add_row(row)
 
 print table
+"""
