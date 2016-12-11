@@ -37,17 +37,17 @@ Do Testing
 
 start_fen = chess.STARTING_FEN
 
-# mpw_test = chessplayer.MinimaxPlayer(   'mpw-test.svg', 
-#                                         fen         = start_fen,
-#                                         player      = chess.WHITE,
-#                                         book        = True,
-#                                         directory   = True )
+mpw_test = chessplayer.MinimaxPlayer(   'mpw-test.svg', 
+                                        fen         = start_fen,
+                                        player      = chess.WHITE,
+                                        book        = True,
+                                        directory   = True )
 
-# mpb_test = chessplayer.MinimaxPlayer(   'mpb-test.svg', 
-#                                         fen         = start_fen,
-#                                         player      = chess.BLACK,
-#                                         book        = True,
-#                                         directory   = True )
+mpb_test = chessplayer.MinimaxPlayer(   'mpb-test.svg', 
+                                        fen         = start_fen,
+                                        player      = chess.BLACK,
+                                        book        = True,
+                                        directory   = True )
 
 gpb_test = chessplayer.GreedyPlayer(   'gp-test.svg', 
                                         fen         = start_fen,
@@ -57,34 +57,32 @@ gpb_test = chessplayer.GreedyPlayer(   'gp-test.svg',
 
 #runners.PlayAgents(rp, gpb_test, debug=True)
 
-# hp = chessplayer.HumanPlayer('hp-out.svg')
+hp = chessplayer.HumanPlayer('hp-out.svg')
 
-# runners.PlayAgents(mpw_test, mpb_test, debug=True)
+#runners.PlayAgents(mpw_test, hp, debug=True)
 
-# runners.PlayAgents(hp, mpb_test, debug=True)
+runners.PlayAgents(hp, mpb_test, debug=True)
 
 """
 Generate Statistics
 --------------
 """
 
-stats = []
+# stats = []
 
-# stats.append(['Greedy vs. Random'] + runners.calcStats((gpw, rp), (rp, gpb), 100))
-# stats.append(['Greedy with Book vs. Random'] + runners.calcStats((gpw_book, rp), (rp, gpb_book), 100))
-# stats.append(['Greedy with Book/TBs vs. Random'] + runners.calcStats((gpw_dir, rp), (rp, gpb_dir), 100))
-stats.append(['Greedy vs. Random'] + runners.calcStats((gpw, rp), (rp, gpb), 100))
-stats.append(['Greedy with Book vs. Random'] + runners.calcStats((gpw_book, rp), (rp, gpb_book), 100))
-stats.append(['Greedy with Book/TBs vs. Random'] + runners.calcStats((gpw_dir, rp), (rp, gpb_dir), 100))
-# #stats.append(['Minimax vs. Greedy'] + runners.calcStats((mpw, gpb), (gpw, mpb), 2))
-# #stats.append(['Minimax with Book vs. Greedy'] + runners.calcStats((mpw_book, gpb), (gpw, mpb_book), 2))
-# #stats.append(['Minimax with Book/TBs vs. Greedy'] + runners.calcStats((mpw_dir, gpb), (gpw, mpb_dir), 5, trunc=True, log=True))
+# # stats.append(['Greedy vs. Random'] + runners.calcStats((gpw, rp), (rp, gpb), 100))
+# # stats.append(['Greedy with Book vs. Random'] + runners.calcStats((gpw_book, rp), (rp, gpb_book), 100))
+# # stats.append(['Greedy with Book/TBs vs. Random'] + runners.calcStats((gpw_dir, rp), (rp, gpb_dir), 100))
+# # stats.append(['Greedy with Book vs. Greedy'] + runners.calcStats((gpw_book, gpb), (gpw, gpb_book), 100))
+# # stats.append(['Greedy with Book/TBs vs. Greedy'] + runners.calcStats((gpw_dir, gpb), (gpw, gpb_dir), 100))
+# stats.append(['Minimax vs. Greedy'] + runners.calcStats((mpw, gpb), (gpw, mpb), 60, trunc=False, log=True))
+# stats.append(['Minimax with Book/TBs vs. Greedy'] + runners.calcStats((mpw_dir, gpb), (gpw, mpb_dir), 60, trunc=False, log=True))
 
-longest_title = max([len(x[0]) for x in stats])
-header = ['Matchup', 'Total Games', 'Wins', 'Losses', 'Draws', 'Win Percentage']
+# longest_title = max([len(x[0]) for x in stats])
+# header = ['Matchup', 'Total Games', 'Wins', 'Losses', 'Draws', 'Win Percentage', 'Loss Percentage']
 
-table = PrettyTable(header)
-for row in stats:
-    table.add_row(row)
+# table = PrettyTable(header)
+# for row in stats:
+#     table.add_row(row)
 
-print table
+# print table

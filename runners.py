@@ -13,15 +13,15 @@ from subprocess import call
 def PlayAgents(WhitePlayer, BlackPlayer, debug=False, truncate=False):
     board = WhitePlayer.board
     if debug:
-        WhitePlayer.printGame(board)
+        #WhitePlayer.printGame(board)
         WhitePlayer.writeBoard('out.svg', board)
-        #call(['open', 'out.svg'])
+        call(['open', 'out.svg'])
         print '\n'
-        time.sleep(2)
+        #time.sleep(2)
 
     stop_cond = board.is_game_over(claim_draw=True)
     if truncate:
-        stop_cond = (board.fullmove_number > 15 or board.is_game_over(claim_draw=True))
+        stop_cond = (board.fullmove_number > 20 or stop_cond)
 
     while not stop_cond:
 
@@ -39,21 +39,21 @@ def PlayAgents(WhitePlayer, BlackPlayer, debug=False, truncate=False):
             board.push(move)
 
         if debug:
-            WhitePlayer.printGame(board)
+            #WhitePlayer.printGame(board)
             WhitePlayer.writeBoard('out.svg', board)
-            #call(['open', 'out.svg'])
+            call(['open', 'out.svg'])
             print '\n'
-            time.sleep(2)
+            #time.sleep(2)
 
         stop_cond = board.is_game_over(claim_draw=True)
         if truncate:
-            stop_cond = (board.fullmove_number > 20 or board.is_game_over(claim_draw=True))
+            stop_cond = (board.fullmove_number > 20 or stop_cond)
 
     if not truncate:
         result = board.result(claim_draw=True)
     elif WhitePlayer.getBoardValue(board) > 1:
         result = "1-0"
-    elif BlackPlayer.getBoardValue(board) > 1:
+    elif WhitePlayer.getBoardValue(board) < 1:
         result = "0-1"
     else:
         result = "1/2-1/2"
@@ -65,7 +65,9 @@ def PlayAgents(WhitePlayer, BlackPlayer, debug=False, truncate=False):
 
     for player in [WhitePlayer, BlackPlayer]:
         player.board.reset()
-        player.half_moves = 0
+    
+    WhitePlayer.half_moves = 0
+    BlackPlayer.half_moves = 1
 
     return result
 
@@ -83,8 +85,8 @@ def PlayAgents(WhitePlayer, BlackPlayer, debug=False, truncate=False):
 def calcStats((white1, black1), (white2, black2),
                 games_per_side, log=False, trunc=False):
     if log:
-        logfile = open('stats.log', 'a')
-        logfile.write("Running Tests: {} vs {}".format(white1, black1))
+        logfile = open('/Users/jwbaskerv/Desktop/ResultsLog.txt', 'a')
+        logfile.write("Running Tests: {} vs {}\n".format(white1, black1))
     wins = 0
     draws = 0
     losses = 0
@@ -95,32 +97,32 @@ def calcStats((white1, black1), (white2, black2),
 
         if result == '1-0':
             wins += 1
-        elif result == '1/2-1/2':
-            draws += 1
-        else:
+        elif result == '0-1':
             losses += 1
+        else:
+            draws += 1
         total += 1
 
         if log:
-            logfile.write(str([total, wins, losses, draws, float(wins) / total]))
+            logfile.write(str([total, wins, losses, draws, float(wins) / total, float(losses) / total])+ '\n')
 
         # white2 vs. black2
         result = PlayAgents(white2, black2, truncate=trunc)
 
         if result == '1-0':
             losses += 1
-        elif result == '1/2-1/2':
-            draws += 1
-        else:
+        elif result == '0-1':
             wins += 1
+        else:
+            draws += 1
         total += 1
 
         if log:
-            logfile.write([total, wins, losses, draws, float(wins) / total])
+            logfile.write(str([total, wins, losses, draws, float(wins) / total, float(losses) / total]) + '\n')
 
     if log:
-        logfile.write("Done with {} vs. {}".format(white1, black1))
+        logfile.write("Done with {} vs. {}\n".format(white1, black1))
         logfile.close()
 
-    return [total, wins, losses, draws, float(wins) / total]
+    return [total, wins, losses, draws, float(wins) / total, float(losses) / total]
 
