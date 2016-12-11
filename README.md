@@ -14,7 +14,7 @@ Usage: `python main.py -w <white> -b <black> -s <svgfile> -f <fen>`
 | \<white>   | the player type of White      | mp (Minimax)          |
 | \<black>   | the player type of Black      | gp (Greedy)           |
 | \<svgfile> | outfile for svgs              | "" (no svg)           |
-| \<fen>     | FEN for custom board position | normal starting board |
+| \<fen>     | FEN for custom board position | chess.STARTING_FEN    |
 
 Player types: Human (hp), Random (rp), Greedy (gp), Minimax (mp), ANN (nn)
 
