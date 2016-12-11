@@ -11,8 +11,8 @@ Usage: `python main.py -w <white> -b <black> -s <svgfile> -f <fen>`
 
 | Option     | Description                   | Default               |
 | ---------- | ----------------------------- | --------------------- |
-| \<white>   | the player type of White      | mp                    |
-| \<black>   | the player type of Black      | gp                    |
+| \<white>   | the player type of White      | mp (Minimax)          |
+| \<black>   | the player type of Black      | gp (Greedy)           |
 | \<svgfile> | outfile for svgs              | "" (no svg)           |
 | \<fen>     | FEN for custom board position | normal starting board |
 
