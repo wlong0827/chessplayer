@@ -7,7 +7,7 @@ Run `pip install -r requirements.txt` to install all code requirements.
 As an alternative to a web broswer, you may install Gaplin (http://gapplin.wolfrosch.com/) to open svgs.
 
 ### Playing a Game
-Usage: python main.py -w \<white> -b \<black> -s \<svgfile> -f \<fen>
+Usage: `python main.py -w <white> -b <black> -s <svgfile> -f <fen>`
 
     Option      Description                     Default
     ---------   -----------------------------   ---------------------
@@ -18,7 +18,7 @@ Usage: python main.py -w \<white> -b \<black> -s \<svgfile> -f \<fen>
 
 Player types: Human (hp), Random (rp), Greedy (gp), Minimax (mp), ANN (nn)
 
-Example: python main.py -w hp -b mp -s game.svg -f '8/8/8/4p3/8/4k3/8/4K3 b - - 0 1'
+Example: `python main.py -w hp -b mp -s game.svg -f '8/8/8/4p3/8/4k3/8/4K3 b - - 0 1'`
 
 Notes: 
 1.  If you don't use the \<svgfile> option, the game will just be printed
