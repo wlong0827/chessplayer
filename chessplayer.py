@@ -379,6 +379,8 @@ class GreedyPlayer(ChessPlayer):
                 best_move = (move, value)
             board.pop()
 
+        print "greedy value:", best_move[1]
+
         # act randomly if no value change is possible
         if self.getBoardValue(board) == best_move[1]:
             return moves[random.randint(0, len(moves) - 1)]
@@ -553,21 +555,21 @@ class GreedyNNPlayer(GreedyPlayer):
         # Construct model
         self.pred = multilayer_perceptron(self.x, weights, biases)
 
-        # saver = tf.train.Saver()
-
-        # with tf.Session() as self.sess:
-        #     # restore variables from disk
-        #     saver.restore(self.sess, "./chess-ann.ckpt")
-        #     #print sess.run(pred, feed_dict = {x: [test_var]})
-
-    def getBoardValue(self, board):
         saver = tf.train.Saver()
 
-        with tf.Session() as sess:
-            # restore variables from disk
-            saver.restore(sess, "./chess-ann.ckpt")
-            b = encode(board)
-            return sess.run(self.pred, feed_dict = {self.x: [b]})
+        self.sess = tf.Session()
+
+        saver.restore(self.sess, "./chess-ann.ckpt")
+
+    def getBoardValue(self, board):
+        return self.sess.run(self.pred, feed_dict = {self.x: [encode(board)]})
+
+    def exit(self):
+        if self.reader:
+            self.reader.close()
+        if self.tbs:
+            self.tbs.close()
+        self.sess.close()
 
 class MinMaxNNPlayer(MinimaxPlayer):
 
