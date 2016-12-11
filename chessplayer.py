@@ -522,6 +522,7 @@ class GreedyNNPlayer(GreedyPlayer):
         self.game = chess.pgn.Game()
         self.half_moves = 0
         self.transposition_matrix = {}
+
         self.value_sign = 1 if player == chess.WHITE else -1
         self.values = { chess.PAWN : 1, 
                 chess.ROOK : 5, 
