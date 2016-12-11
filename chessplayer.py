@@ -81,41 +81,48 @@ class ChessPlayer:
 
     def printGame(self, board):
         #print self.game
-        count = 0
+        ranks = []
 
-        print "a  b  c  d  e  f  g  h\n"
-        for square in chess.SQUARES:
-            piece = board.piece_at(square)
+        for rank_index in xrange(8):
+            line = [unicode(rank_index + 1), ' ']
+            for file_index in xrange(8):
+                piece = board.piece_at(chess.square(file_index, rank_index))
 
-            if not piece:
-                sys.stdout.write("." + "  ")
-            elif piece.piece_type == chess.ROOK and piece.color == chess.BLACK:
-                sys.stdout.write(UNICODE_PIECES['r'] + "  ")
-            elif piece.piece_type == chess.KNIGHT and piece.color == chess.BLACK:
-                sys.stdout.write(UNICODE_PIECES['n'] + "  ")
-            elif piece.piece_type == chess.BISHOP and piece.color == chess.BLACK:
-                sys.stdout.write(UNICODE_PIECES['b'] + "  ")
-            elif piece.piece_type == chess.QUEEN and piece.color == chess.BLACK:
-                sys.stdout.write(UNICODE_PIECES['q'] + "  ")
-            elif piece.piece_type == chess.KING and piece.color == chess.BLACK:
-                sys.stdout.write(UNICODE_PIECES['k'] + "  ")
-            elif piece.piece_type == chess.PAWN and piece.color == chess.BLACK:
-                sys.stdout.write(UNICODE_PIECES['p'] + "  ")
-            elif piece.piece_type == chess.ROOK and piece.color == chess.WHITE:
-                sys.stdout.write(UNICODE_PIECES['R'] + "  ")
-            elif piece.piece_type == chess.KNIGHT and piece.color == chess.WHITE:
-                sys.stdout.write(UNICODE_PIECES['N'] + "  ")
-            elif piece.piece_type == chess.BISHOP and piece.color == chess.WHITE:
-                sys.stdout.write(UNICODE_PIECES['B'] + "  ")
-            elif piece.piece_type == chess.QUEEN and piece.color == chess.WHITE:
-                sys.stdout.write(UNICODE_PIECES['Q'] + "  ")
-            elif piece.piece_type == chess.KING and piece.color == chess.WHITE:
-                sys.stdout.write(UNICODE_PIECES['K'] + "  ")
-            elif piece.piece_type == chess.PAWN and piece.color == chess.WHITE:
-                sys.stdout.write(UNICODE_PIECES['P'] + "  ")
-            count += 1
-            if count % 8 == 0:
-                print str(count/8) + "\n"
+                if not piece:
+                    line.append(".")
+                elif piece.color == chess.WHITE:
+                    if piece.piece_type == chess.PAWN:
+                        line.append(UNICODE_PIECES['p'])
+                    elif piece.piece_type == chess.KNIGHT:
+                        line.append(UNICODE_PIECES['n'])
+                    elif piece.piece_type == chess.BISHOP:
+                        line.append(UNICODE_PIECES['b'])
+                    elif piece.piece_type == chess.ROOK:
+                        line.append(UNICODE_PIECES['r'])
+                    elif piece.piece_type == chess.QUEEN:
+                        line.append(UNICODE_PIECES['q'])
+                    elif piece.piece_type == chess.KING:
+                        line.append(UNICODE_PIECES['k'])
+                else:
+                    if piece.piece_type == chess.PAWN:
+                        line.append(UNICODE_PIECES['P'])
+                    elif piece.piece_type == chess.KNIGHT:
+                        line.append(UNICODE_PIECES['N'])
+                    elif piece.piece_type == chess.BISHOP:
+                        line.append(UNICODE_PIECES['B'])
+                    elif piece.piece_type == chess.ROOK:
+                        line.append(UNICODE_PIECES['R'])
+                    elif piece.piece_type == chess.QUEEN:
+                        line.append(UNICODE_PIECES['Q'])
+                    elif piece.piece_type == chess.KING:
+                        line.append(UNICODE_PIECES['K'])
+                line.append("  ")
+
+            line.append(u"\n")
+            ranks.insert(0, ''.join(line))
+        print '\n'.join(ranks)    
+
+        print "  a  b  c  d  e  f  g  h\n"
 
     def exit(self):
         if self.reader:
@@ -153,8 +160,8 @@ class ChessPlayer:
 
         zobrist_hash = board.zobrist_hash()
 
-        if zobrist_hash in self.transposition_matrix:
-            return self.transposition_matrix[zobrist_hash]
+        # if zobrist_hash in self.transposition_matrix:
+        #     return self.transposition_matrix[zobrist_hash]
 
         material, endgame = self.evalMaterial(board)
 
@@ -178,7 +185,11 @@ class ChessPlayer:
 
         result = ((mat_weight * material) + (pos_weight * position))
 
-        self.transposition_matrix[zobrist_hash] = result
+        # ZOBRIST HASH DOESN'T WORK
+        # if zobrist_hash in self.transposition_matrix:
+        #     assert(self.transposition_matrix[zobrist_hash] == result)
+        
+        # self.transposition_matrix[zobrist_hash] = result
         return result
 
     def evalMaterial(self, board):
@@ -339,6 +350,7 @@ class GreedyPlayer(ChessPlayer):
                         chess.QUEEN: 9, 
                         chess.KING : MATE_VALUE }
         self.value_sign = 1 if player == chess.WHITE else -1
+        self.transposition_matrix = {}
 
         if isinstance(book, basestring) and book != "":
             self.initOpeningBook(book)
@@ -367,6 +379,8 @@ class GreedyPlayer(ChessPlayer):
                 best_move = (move, value)
             board.pop()
 
+        print "greedy value:", best_move[1]
+
         # act randomly if no value change is possible
         if self.getBoardValue(board) == best_move[1]:
             return moves[random.randint(0, len(moves) - 1)]
@@ -388,6 +402,7 @@ class MinimaxPlayer(ChessPlayer):
         self.legal_moves = 0
         # start at 0 if white, 1 if black
         self.half_moves = 0 if player == chess.WHITE else 1
+        self.transposition_matrix = {}
 
         if isinstance(book, basestring) and book != "":
             self.initOpeningBook(book)
@@ -424,7 +439,7 @@ class MinimaxPlayer(ChessPlayer):
             if (value[0] == MATE_VALUE and 
                 board_copy.is_checkmate() and
                 depth == MAX_DEPTH):
-                print "yes"
+                #print "yes"
                 return value
         return value
 
@@ -464,7 +479,7 @@ class MinimaxPlayer(ChessPlayer):
         alpha = -float('inf')
         beta = float('inf')
         value, moves = self.value(board, depth, player, alpha, beta)
-        print "minimax value: ", value
+        #print "minimax value: ", value
         move = moves[self.half_moves]
         self.half_moves += 2
         return move
@@ -540,21 +555,21 @@ g
         # Construct model
         self.pred = multilayer_perceptron(self.x, weights, biases)
 
-        # saver = tf.train.Saver()
-
-        # with tf.Session() as self.sess:
-        #     # restore variables from disk
-        #     saver.restore(self.sess, "./chess-ann.ckpt")
-        #     #print sess.run(pred, feed_dict = {x: [test_var]})
-
-    def getBoardValue(self, board):
         saver = tf.train.Saver()
 
-        with tf.Session() as sess:
-            # restore variables from disk
-            saver.restore(sess, "./chess-ann.ckpt")
-            b = encode(board)
-            return sess.run(self.pred, feed_dict = {self.x: [b]})
+        self.sess = tf.Session()
+
+        saver.restore(self.sess, "./chess-ann.ckpt")
+
+    def getBoardValue(self, board):
+        return self.sess.run(self.pred, feed_dict = {self.x: [encode(board)]})
+
+    def exit(self):
+        if self.reader:
+            self.reader.close()
+        if self.tbs:
+            self.tbs.close()
+        self.sess.close()
 
 class MinMaxNNPlayer(MinimaxPlayer):
 
