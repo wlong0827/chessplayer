@@ -1,90 +1,91 @@
 # -*- encoding: utf-8 -*-
-
+import getopt
+import sys
 import chess
-from prettytable import PrettyTable
-
 import chessplayer
 import runners
 
 """
-Create Chessplayer Instances
-----------------------------
-"""
-
-rp = chessplayer.RandomPlayer('rp-out.svg')
-
-gpw = chessplayer.GreedyPlayer('gp-out.svg')
-gpb = chessplayer.GreedyPlayer('gp-out.svg', player=chess.BLACK)
-gpw_book = chessplayer.GreedyPlayer('gp-book-out.svg', book=True)
-gpb_book = chessplayer.GreedyPlayer('gp-book-out.svg', player=chess.BLACK, book=True)
-gpw_dir = chessplayer.GreedyPlayer('gp-dir-out.svg', player=chess.WHITE, book=True, directory=True)
-gpb_dir = chessplayer.GreedyPlayer('gp-dir2-out.svg', player=chess.BLACK, book=True, directory=True)
-
-mpw = chessplayer.MinimaxPlayer('mpw-out.svg', player=chess.WHITE)
-mpb = chessplayer.MinimaxPlayer('mpb-out.svg', player=chess.BLACK)
-
-mpw_book = chessplayer.MinimaxPlayer('mpw-book-out.svg', player=chess.WHITE, book=True)
-mpb_book = chessplayer.MinimaxPlayer('mpb-book-out.svg', player=chess.BLACK, book=True)
-
-mpw_dir = chessplayer.MinimaxPlayer('mpw-dir-out.svg', player=chess.WHITE, book=True, directory=True)
-mpb_dir = chessplayer.MinimaxPlayer('mpb-dir-out.svg', player=chess.BLACK, book=True, directory=True)
-
-"""
-Do Testing
+Play a Game!
+    Note: You can't play ANN vs. ANN because you can only restore one
+    TensorFlow session from the data at a time.
 ----------
 """
+def play(argv):
 
-start_fen = chess.STARTING_FEN
+    start_fen = chess.STARTING_FEN
+    svgfile = ""
 
-mpw_test = chessplayer.MinimaxPlayer(   'mpw-test.svg', 
-                                        fen         = start_fen,
-                                        player      = chess.WHITE,
-                                        book        = True,
-                                        directory   = True )
+    white_type = 'mp'
+    black_type = 'gp'
 
-mpb_test = chessplayer.MinimaxPlayer(   'mpb-test.svg', 
-                                        fen         = start_fen,
-                                        player      = chess.BLACK,
-                                        book        = True,
-                                        directory   = True )
+    try:
+        opts, args = getopt.getopt(argv, "hw:b:s:f:", ["white=", "black=", "fen="])
+    except getopt.GetoptError:
+        print 'Usage: main.py -w <whiteplayer> -b <blackplayer> -s <svgfile> -f <FEN>]'
+        print '   Players: Human (hp), Random (rp), Greedy (gp), Minimax (mp), ANN (nn)'
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print 'main.py -w <whiteplayer> -b <blackplayer> -s <svgfile> -f <FEN>]'
+            print '   Players: Human (hp), Random (rp), Greedy (gp), Minimax (mp), ANN (nn)'
+            sys.exit()
+        elif opt in ("-w", "--white"):
+            if arg not in ("hp", "rp", "gp", "mp", "nn"):
+                print 'White player type not recognized. Use the shortcode (e.g. "hp").'
+                print '   Players: Human (hp), Random (rp), Greedy (gp), Minimax (mp), ANN (nn)'
+                sys.exit(2)
+            else:
+                white_type = arg
+        elif opt in ("-b", "--black"):
+            if arg not in ("hp", "rp", "gp", "mp", "nn"):
+                print 'Black player type not recognized. Use the shortcode (e.g. "hp").'
+                print '   Players: Human (hp), Random (rp), Greedy (gp), Minimax (mp), ANN (nn)'
+                sys.exit(2)
+            else:
+                black_type = arg
+        elif opt in ("-s", "--svgfile"):
+            svgfile = arg
+        elif opt in ("-f", "--fen"):
+            start_fen = arg
 
-#gpb_test = chessplayer.GreedyPlayer(   'gp-test.svg', 
-#                                        fen         = start_fen,
-#                                        player      = chess.BLACK,
-#                                        book        = True,
-#                                        directory   = True )
+    print start_fen
 
-#runners.PlayAgents(rp, gpb_test, debug=True)
+    print ""
+    if white_type == 'hp':
+        print "White Player: Human"
+        white = chessplayer.HumanPlayer(fen=start_fen)
+    elif white_type == 'rp':
+        print "White Player: Random"
+        white = chessplayer.RandomPlayer(fen=start_fen)
+    elif white_type == 'gp':
+        print "White Player: Greedy"
+        white = chessplayer.GreedyPlayer(player=chess.WHITE, fen=start_fen, book=True, directory=True)
+    elif white_type == 'mp':
+        print "White Player: Minimax"
+        white = chessplayer.MinimaxPlayer(player=chess.WHITE, fen=start_fen, book=True, directory=True)
+    elif white_type == 'nn':
+        print "White Player: Greedy ANN"
+        white = chessplayer.GreedyNNPlayer(player=chess.WHITE, fen=start_fen, book=True, directory=True)
 
-#hp = chessplayer.HumanPlayer('hp-out.svg')
+    if black_type == 'hp':
+        print "Black Player: Human"
+        black = chessplayer.HumanPlayer(fen=start_fen)
+    elif black_type == 'rp':
+        print "Black Player: Random"
+        black = chessplayer.RandomPlayer(fen=start_fen)
+    elif black_type == 'gp':
+        print "Black Player: Greedy"
+        black = chessplayer.GreedyPlayer(player=chess.BLACK, fen=start_fen, book=True, directory=True)
+    elif black_type == 'mp':
+        print "Black Player: Minimax"
+        black = chessplayer.MinimaxPlayer(player=chess.BLACK, fen=start_fen, book=True, directory=True)
+    elif black_type == 'nn':
+        print "Black Player: Greedy ANN"
+        black = chessplayer.GreedyNNPlayer(player=chess.BLACK, fen=start_fen, book=True, directory=True)
+    print ""
 
-#runners.PlayAgents(mpw_test, hp, debug=True)
+    runners.PlayAgents(white, black, outfile=svgfile, debug=True)
 
-#runners.PlayAgents(hp, mpb_test, debug=True)
-nn = chessplayer.GreedyNNPlayer('nn-test.svg', fen = start_fen, player=chess.WHITE)
-
-runners.PlayAgents(nn, mpb_test, debug=True)
-
-"""
-Generate Statistics
---------------
-"""
-
-#stats = []
-
-# # stats.append(['Greedy vs. Random'] + runners.calcStats((gpw, rp), (rp, gpb), 100))
-# # stats.append(['Greedy with Book vs. Random'] + runners.calcStats((gpw_book, rp), (rp, gpb_book), 100))
-# # stats.append(['Greedy with Book/TBs vs. Random'] + runners.calcStats((gpw_dir, rp), (rp, gpb_dir), 100))
-# # stats.append(['Greedy with Book vs. Greedy'] + runners.calcStats((gpw_book, gpb), (gpw, gpb_book), 100))
-# # stats.append(['Greedy with Book/TBs vs. Greedy'] + runners.calcStats((gpw_dir, gpb), (gpw, gpb_dir), 100))
-# stats.append(['Minimax vs. Greedy'] + runners.calcStats((mpw, gpb), (gpw, mpb), 60, trunc=False, log=True))
-# stats.append(['Minimax with Book/TBs vs. Greedy'] + runners.calcStats((mpw_dir, gpb), (gpw, mpb_dir), 60, trunc=False, log=True))
-
-# longest_title = max([len(x[0]) for x in stats])
-# header = ['Matchup', 'Total Games', 'Wins', 'Losses', 'Draws', 'Win Percentage', 'Loss Percentage']
-
-# table = PrettyTable(header)
-# for row in stats:
-#     table.add_row(row)
-
-# print table
+if __name__ == "__main__":
+   play(sys.argv[1:])

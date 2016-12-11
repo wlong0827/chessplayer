@@ -2,7 +2,9 @@
 ## CS 182 Final Project
 
 ### Requirements
-Run `pip install -r requirements.txt` to install all requirements
+Run `pip install -r requirements.txt` to install all code requirements.
 
-### Running chessplayer
-Running `python chessplayer.py` writes the chess board to an svg file `out.svg` which can subsequently be opened in a web browser like Chrome
+As an alternative to any web broswer, install Gaplin (http://gapplin.wolfrosch.com/) to open svgs.
+
+### Playing a Game
+Running `python main.py` 

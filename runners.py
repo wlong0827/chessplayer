@@ -10,14 +10,21 @@ from subprocess import call
     If debug is set to True, the game plays one move every 2 seconds,
     prints the board after each move, and reports the result.
 """
-def PlayAgents(WhitePlayer, BlackPlayer, debug=False, truncate=False):
+def PlayAgents(WhitePlayer, BlackPlayer, outfile="", debug=False, truncate=False):
     board = WhitePlayer.board
+
+    # for input FENs
+    if board.turn == chess.BLACK:
+        WhitePlayer.half_moves = 1
+        BlackPlayer.half_moves = 0
+
     if debug:
-        #WhitePlayer.printGame(board)
-        WhitePlayer.writeBoard('out.svg', board)
-        call(['open', 'out.svg'])
+        if outfile != "":
+            WhitePlayer.writeBoard(outfile, board)
+            call(['open', outfile])
+        WhitePlayer.printGame(board)
         print '\n'
-        #time.sleep(2)
+        time.sleep(2)
 
     stop_cond = board.is_game_over(claim_draw=True)
     if truncate:
@@ -39,11 +46,12 @@ def PlayAgents(WhitePlayer, BlackPlayer, debug=False, truncate=False):
             board.push(move)
 
         if debug:
-            #WhitePlayer.printGame(board)
-            WhitePlayer.writeBoard('out.svg', board)
-            call(['open', 'out.svg'])
+            if outfile != "":
+                WhitePlayer.writeBoard(outfile, board)
+                call(['open', outfile])
+            WhitePlayer.printGame(board)
             print '\n'
-            #time.sleep(2)
+            time.sleep(2)
 
         stop_cond = board.is_game_over(claim_draw=True)
         if truncate:
@@ -59,7 +67,6 @@ def PlayAgents(WhitePlayer, BlackPlayer, debug=False, truncate=False):
         result = "1/2-1/2"
 
     if debug:
-        WhitePlayer.printGame(board)
         print result
         print chess.pgn.Game.from_board(board)
 

@@ -2,7 +2,7 @@
 
 
 # Author: James Baskerville, Vinay Iyengar, Will Long
-# MRU: Dec 07 2016
+# MRU: Dec 12 2016
 # Description: Our CS 182 Final Project is a python program that 
 #   utilizes python-chess to analyze and play chess
 
@@ -35,7 +35,7 @@ UNICODE_PIECES = {
   'r': u'♜', 'n': u'♞', 'b': u'♝', 'q': u'♛',
   'k': u'♚', 'p': u'♟', 'R': u'♖', 'N': u'♘',
   'B': u'♗', 'Q': u'♕', 'K': u'♔', 'P': u'♙',
-  None: ' '
+  '.':u'·'
 }
 
 class ChessPlayer:
@@ -47,8 +47,7 @@ class ChessPlayer:
 
     # INITIALIZATION
     # -------------------------
-    def __init__(self, outfile, fen=chess.STARTING_FEN):
-        self.outfile = outfile
+    def __init__(self, fen=chess.STARTING_FEN):
         self.board = chess.Board(fen)
         self.game = chess.pgn.Game()
         self.reader = None
@@ -89,7 +88,7 @@ class ChessPlayer:
                 piece = board.piece_at(chess.square(file_index, rank_index))
 
                 if not piece:
-                    line.append(".")
+                    line.append(UNICODE_PIECES['.'])
                 elif piece.color == chess.WHITE:
                     if piece.piece_type == chess.PAWN:
                         line.append(UNICODE_PIECES['p'])
@@ -116,13 +115,13 @@ class ChessPlayer:
                         line.append(UNICODE_PIECES['Q'])
                     elif piece.piece_type == chess.KING:
                         line.append(UNICODE_PIECES['K'])
-                line.append("  ")
+                line.append(" ")
 
-            line.append(u"\n")
+            #line.append(u"\n")
             ranks.insert(0, ''.join(line))
         print '\n'.join(ranks)    
 
-        print "  a  b  c  d  e  f  g  h\n"
+        print "  a b c d e f g h\n"
 
     def exit(self):
         if self.reader:
@@ -270,12 +269,21 @@ class ChessPlayer:
         wins = []
         losses = []
         draws = []
+        outcome = self.tbs.probe_dtz(board)
         for move in legal_moves:
+            # if winning and move is zeroing, play that move
+            if outcome > 0:
+                piece = board.piece_at(move.from_square)               
+                if ((piece and piece.piece_type == chess.PAWN) or
+                    (board.is_capture(move))):
+                    return [move]
+
             board.push(move)
+            # dtz value is for opponent
             dtz = self.tbs.probe_dtz(board)
             if dtz == None:
                 pass
-            elif dtz > 0:
+            elif dtz < 0:
                 # winning move
                 wins.append((move, dtz))
             elif dtz == 0:
@@ -286,29 +294,25 @@ class ChessPlayer:
                 losses.append((move, dtz))
             board.pop()
 
-        half_moves_left = 100 - board.halfmove_clock
         if wins:
-            if dtz >= half_moves_left - 4:
-                moves = sorted(wins, key=lambda win: win[1])[0][0]
-            else:
-                moves = [win[0] for win in wins]
-            moves = wins
+            moves = [win[0] for win in sorted(wins, key=lambda x: x[1], reverse=True)[0:1]]
         elif draws:
             moves = draws
         elif losses:
-            moves = sorted(losses, key=lambda loss: loss[1], reverse=True)[0][0]
+            moves = [loss[0] for loss in sorted(losses, key=lambda loss: loss[1], reverse=True)[0:1]]
         else:
             moves = []
+
         return moves
 
     def getGoodMoves(self, board):
         moves = []
         legal_moves = list(board.legal_moves)
+
         # endgame tablebases
         if self.tbs and self.getNumPieces(board) <= 5:
-            moves = self.getEndgameMoves(board, moves)
-            if moves:
-                print "used endgame:", moves
+            moves = [move for move in self.getEndgameMoves(board, legal_moves)
+                        if move in legal_moves]
         # opening book
         elif self.reader and self.board.fullmove_number <= 10:
             moves = [entry.move() for entry in self.reader.find_all(board)
@@ -338,8 +342,7 @@ class RandomPlayer(ChessPlayer):
 
 class GreedyPlayer(ChessPlayer):
 
-    def __init__(self, outfile, fen=chess.STARTING_FEN, player=chess.WHITE, book="", directory=""):
-        self.outfile = outfile
+    def __init__(self, fen=chess.STARTING_FEN, player=chess.WHITE, book="", directory=""):
         self.board = chess.Board(fen)
 
         # I can't seem to find a piece value dict so I wrote one
@@ -375,12 +378,9 @@ class GreedyPlayer(ChessPlayer):
         for move in moves:
             board.push(move)
             value = self.getBoardValue(board) * self.value_sign
-            print value
             if value > best_move[1]:
                 best_move = (move, value)
             board.pop()
-
-        print "greedy value:", best_move[1]
 
         # act randomly if no value change is possible
         if self.getBoardValue(board) == best_move[1]:
@@ -390,8 +390,7 @@ class GreedyPlayer(ChessPlayer):
 
 class MinimaxPlayer(ChessPlayer):
 
-    def __init__(self, outfile, fen=chess.STARTING_FEN, player=chess.WHITE, book="", directory=""):
-        self.outfile = outfile
+    def __init__(self, fen=chess.STARTING_FEN, player=chess.WHITE, book="", directory=""):
         self.board = chess.Board(fen)
         self.values = { chess.PAWN : 1, 
                         chess.ROOK : 5, 
@@ -400,7 +399,6 @@ class MinimaxPlayer(ChessPlayer):
                         chess.QUEEN: 9,
                         chess.KING : MATE_VALUE }
         self.calculations = 0
-        self.legal_moves = 0
         # start at 0 if white, 1 if black
         self.half_moves = 0 if player == chess.WHITE else 1
         self.transposition_matrix = {}
@@ -440,7 +438,6 @@ class MinimaxPlayer(ChessPlayer):
             if (value[0] == MATE_VALUE and 
                 board_copy.is_checkmate() and
                 depth == MAX_DEPTH):
-                #print "yes"
                 return value
         return value
 
@@ -480,7 +477,6 @@ class MinimaxPlayer(ChessPlayer):
         alpha = -float('inf')
         beta = float('inf')
         value, moves = self.value(board, depth, player, alpha, beta)
-        #print "minimax value: ", value
         move = moves[self.half_moves]
         self.half_moves += 2
         return move
@@ -521,8 +517,7 @@ def multilayer_perceptron(x, weights, biases):
 
 class GreedyNNPlayer(GreedyPlayer):
 
-    def __init__(self, outfile, fen=chess.STARTING_FEN, player=chess.WHITE, book="", directory=""):
-        self.outfile = outfile
+    def __init__(self, fen=chess.STARTING_FEN, player=chess.WHITE, book="", directory=""):
         self.board = chess.Board(fen)
         self.game = chess.pgn.Game()
         self.half_moves = 0
@@ -617,8 +612,7 @@ class GreedyNNPlayer(GreedyPlayer):
 
 class MinMaxNNPlayer(MinimaxPlayer):
 
-    def __init__(self, outfile, fen=chess.STARTING_FEN, player=chess.WHITE, book="", directory=""):
-        self.outfile = outfile
+    def __init__(self, fen=chess.STARTING_FEN, player=chess.WHITE, book="", directory=""):
         self.board = chess.Board(fen)
         self.game = chess.pgn.Game()
         self.half_moves = 0
