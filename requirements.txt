@@ -1,2 +1,3 @@
-python-chess
-tensorflow
+version https://git-lfs.github.com/spec/v1
+oid sha256:595299e16328c68fce03634cb6d3f3408e9c89f5a122a627ea2ef1160edef391
+size 24
