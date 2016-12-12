@@ -10,7 +10,7 @@ from subprocess import call
     If debug is set to True, the game plays one move every 2 seconds,
     prints the board after each move, and reports the result.
 """
-def PlayAgents(WhitePlayer, BlackPlayer, outfile="", debug=False, truncate=False):
+def playAgents(WhitePlayer, BlackPlayer, outfile="", debug=False, truncate=False):
     board = WhitePlayer.board
 
     # for input FENs
@@ -100,7 +100,7 @@ def calcStats((white1, black1), (white2, black2),
     total = 0
     for _ in xrange(games_per_side):
         # white1 vs. black1
-        result = PlayAgents(white1, black1, truncate=trunc)
+        result = playAgents(white1, black1, truncate=trunc)
 
         if result == '1-0':
             wins += 1
@@ -114,7 +114,7 @@ def calcStats((white1, black1), (white2, black2),
             logfile.write(str([total, wins, losses, draws, float(wins) / total, float(losses) / total])+ '\n')
 
         # white2 vs. black2
-        result = PlayAgents(white2, black2, truncate=trunc)
+        result = playAgents(white2, black2, truncate=trunc)
 
         if result == '1-0':
             losses += 1
