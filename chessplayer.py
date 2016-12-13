@@ -18,19 +18,19 @@ import os
 import sys
 import tensorflow as tf
 
-# depth for search
-MAX_DEPTH = 3
-
 # stuff for evaluation function
 import pstbs
 MATE_VALUE = 10000
 CASTLE_VALUE = 100
 
-# weights
+# weights for eval function
 mat_weight = 30.0
 pos_weight = 8.0
-cas_weight = 50.0
 
+# depth for search
+MAX_DEPTH = 3
+
+# dictionary of unicode pieces for console printing
 UNICODE_PIECES = {
   'r': u'♜', 'n': u'♞', 'b': u'♝', 'q': u'♛',
   'k': u'♚', 'p': u'♟', 'R': u'♖', 'N': u'♘',
@@ -49,11 +49,9 @@ class ChessPlayer:
     # -------------------------
     def __init__(self, fen=chess.STARTING_FEN):
         self.board = chess.Board(fen)
-        self.game = chess.pgn.Game()
         self.reader = None
         self.tbs = None
         self.half_moves = 0
-        self.transposition_matrix = {}
 
     def initOpeningBook(self, book="gm2600"):
         path = "opening_books/" + book + ".bin"
@@ -79,7 +77,6 @@ class ChessPlayer:
         f.close()
 
     def printGame(self, board):
-        #print self.game
         ranks = []
 
         for rank_index in xrange(8):
@@ -129,16 +126,6 @@ class ChessPlayer:
         if self.tbs:
             self.tbs.close()
 
-    # move is a chess.Move object
-    def getMoveValue(self, move):
-        target = move.to_square
-        piece = self.board.piece_at(target)
-        
-        if piece:
-            # piece could be upper or lower case
-            return self.values[piece.piece_type]
-        return 0
-
     def getNumPieces(self, board):
         count = 0
         for square in chess.SQUARES:
@@ -157,11 +144,6 @@ class ChessPlayer:
             else:
                 return -MATE_VALUE
 
-        zobrist_hash = board.zobrist_hash()
-
-        # if zobrist_hash in self.transposition_matrix:
-        #     return self.transposition_matrix[zobrist_hash]
-
         material, endgame = self.evalMaterial(board)
 
         # only evaluate position after opening
@@ -170,27 +152,15 @@ class ChessPlayer:
         else:
             position = 0.0
 
-        #castle = self.evalCastle(board)
-
         # normalize (to range -1 to 1)
         material = material / 39.0
         position = position / (self.getNumPieces(board) * 50.0)
-        #castle = castle / CASTLE_VALUE
-
-        #print "material total:", (mat_weight * material)
-        #print "position total:", (pos_weight * position)
-        #print "castle total:", (cas_weight * castle)
-        #print ""
 
         result = ((mat_weight * material) + (pos_weight * position))
 
-        # ZOBRIST HASH DOESN'T WORK
-        # if zobrist_hash in self.transposition_matrix:
-        #     assert(self.transposition_matrix[zobrist_hash] == result)
-        
-        # self.transposition_matrix[zobrist_hash] = result
         return result
 
+    # evaluate difference in material (and whether it's the "endgame")
     def evalMaterial(self, board):
         white_mat = 0.0
         black_mat = 0.0
@@ -207,6 +177,7 @@ class ChessPlayer:
 
         return (material, endgame)
 
+    # lookup a certain square in the PSTs
     def lookupPST(self, square, piece, endgame):
         # king PST depends on game stage and color
         if piece.piece_type == chess.KING:
@@ -230,6 +201,7 @@ class ChessPlayer:
 
         return val
 
+    # evaluate difference in position (based on PSTs)
     def evalPosition(self, board, endgame):
         white_pos = 0.0
         black_pos = 0.0
@@ -245,26 +217,10 @@ class ChessPlayer:
 
         return position
 
-    # def evalCastle(self, board):
-    #     move = board.pop()
-    #     val = 0
-
-    #     if board.is_castling(move):
-    #         if board.turn == chess.WHITE:
-    #             val = CASTLE_VALUE
-    #         else:
-    #             val = -CASTLE_VALUE
-
-    #     board.push(move)
-    #     return val
-
-    # def evalKingSafety(self, board):
-    #     pass
-
-
     # MOVING FUNCTIONS
     # ----------------
 
+    # generate correct move(s) for the endgame (5 or fewer pieces)
     def getEndgameMoves(self, board, legal_moves):
         wins = []
         losses = []
@@ -305,6 +261,7 @@ class ChessPlayer:
 
         return moves
 
+    # generate good moves, using opening book or endgame lookup as needed
     def getGoodMoves(self, board):
         moves = []
         legal_moves = list(board.legal_moves)
@@ -329,11 +286,10 @@ class ChessPlayer:
     def move(self, board):
         pass
 
-"""
-    RandomPlayer plays a random legal move at each step until
-    the game is over, then writes the final position to self.file
-"""
 class RandomPlayer(ChessPlayer):
+    """
+    RandomPlayer plays a random legal move.
+    """
 
     def move(self, board):
         legal_moves = list(board.legal_moves)
@@ -341,20 +297,22 @@ class RandomPlayer(ChessPlayer):
 
 
 class GreedyPlayer(ChessPlayer):
+    """
+    GreedyPlayer plays the best legal move according to our
+    evaluation function.
+    """
 
     def __init__(self, fen=chess.STARTING_FEN, player=chess.WHITE, book="", directory=""):
         self.board = chess.Board(fen)
-
-        # I can't seem to find a piece value dict so I wrote one
+        self.value_sign = 1 if player == chess.WHITE else -1
         self.values = { chess.PAWN : 1, 
                         chess.ROOK : 5, 
                         chess.KNIGHT : 3, 
                         chess.BISHOP : 3, 
                         chess.QUEEN: 9, 
                         chess.KING : MATE_VALUE }
-        self.value_sign = 1 if player == chess.WHITE else -1
-        self.transposition_matrix = {}
 
+        # initialize opening book
         if isinstance(book, basestring) and book != "":
             self.initOpeningBook(book)
         elif book == True:
@@ -362,6 +320,7 @@ class GreedyPlayer(ChessPlayer):
         else:
             self.reader = None
 
+        # initialize endgame tbs
         if isinstance(directory, basestring) and directory != "":
             self.initTablebases(directory)
         elif directory == True:
@@ -370,8 +329,9 @@ class GreedyPlayer(ChessPlayer):
             self.tbs = None
 
     def move(self, board):   
-        # best_move = (move, value)
         moves = self.getGoodMoves(board)
+
+        # (move, value) pair
         best_move = (None, -float('inf'))
 
         # takes move that maximizes immediate board value
@@ -382,13 +342,19 @@ class GreedyPlayer(ChessPlayer):
                 best_move = (move, value)
             board.pop()
 
-        # act randomly if no value change is possible
+        # act randomly among moves if no value change is possible
         if self.getBoardValue(board) == best_move[1]:
             return moves[random.randint(0, len(moves) - 1)]
         
         return best_move[0]
 
 class MinimaxPlayer(ChessPlayer):
+    """
+    MinimaxPlayer searches for good variations down to MAX_DEPTH
+    depth, and returns the best one according to our
+    evaluation function. Also utilizes alpha-beta pruning to 
+    improve performance.
+    """
 
     def __init__(self, fen=chess.STARTING_FEN, player=chess.WHITE, book="", directory=""):
         self.board = chess.Board(fen)
@@ -398,11 +364,11 @@ class MinimaxPlayer(ChessPlayer):
                         chess.BISHOP : 3,
                         chess.QUEEN: 9,
                         chess.KING : MATE_VALUE }
-        self.calculations = 0
+
         # start at 0 if white, 1 if black
         self.half_moves = 0 if player == chess.WHITE else 1
-        self.transposition_matrix = {}
 
+        # initialize opening book
         if isinstance(book, basestring) and book != "":
             self.initOpeningBook(book)
         elif book == True:
@@ -410,6 +376,7 @@ class MinimaxPlayer(ChessPlayer):
         else:
             self.reader = None
 
+        # initialize endgame tbs
         if isinstance(directory, basestring) and directory != "":
             self.initTablebases(directory)
         elif directory == True:
@@ -419,55 +386,74 @@ class MinimaxPlayer(ChessPlayer):
 
     def maxMove(self, board, depth, player, alpha, beta):
         moves = self.getGoodMoves(board)
+
+        # (value, movestack) pair
         value = (-float('inf'), None)
+
         for move in moves:
             assert(board.is_legal(move))
+
             board_copy = board.copy()
-            #self.calculations += 1
             board_copy.push(move)
-            #value = max(value, self.move(board_copy, depth - 1, player))
             new_val = self.value(board_copy, depth - 1, player, alpha, beta)
+
             if new_val[0] > value[0]:
                 value = new_val
             elif (new_val[0] == value[0] and 
                 len(new_val[1]) < len(value[1]) and new_val[0] > 0):
                 value = new_val
+
+            # alpha-beta pruning and updates
             if value[0] >= beta:
                 return value
             alpha = max(alpha, value[0])
+
+            # if we can mate this move, do it!
             if (value[0] == MATE_VALUE and 
                 board_copy.is_checkmate() and
                 depth == MAX_DEPTH):
                 return value
+
         return value
 
     def minMove(self, board, depth, player, alpha, beta):
         moves = self.getGoodMoves(board)
+
+        # (value, movestack) pair
         value = (float('inf'), None)
+
         for move in moves:
             assert(board.is_legal(move))
+
             board_copy = board.copy()
             board_copy.push(move)
             new_val = self.value(board_copy, depth - 1, player, alpha, beta)
+
             if new_val[0] < value[0]:
                 value = new_val
             elif (new_val[0] == value[0] and 
                 len(new_val[1]) < len(value[1]) and new_val[0] < 0):
                 value = new_val
+
+            # alpha-beta pruning and updates
             if value[0] <= alpha:
                 return value
             beta = min(beta, value[0])
+
+            # if we can mate this move, do it!
             if (value[0] == -MATE_VALUE and 
                 board_copy.is_checkmate() and
                 depth == MAX_DEPTH):
                 return value
+
         return value
 
     def value(self, board, depth, player, alpha, beta):
+        # base case (terminal state)
         if depth == 0 or board.is_game_over():
             value = self.getBoardValue(board)
-            self.calculations += 1
             return (value, board.move_stack)
+
         if board.turn == player: 
             return self.maxMove(board, depth, player, alpha, beta)
         else:
@@ -476,11 +462,15 @@ class MinimaxPlayer(ChessPlayer):
     def move(self, board, depth=MAX_DEPTH, player=chess.WHITE):
         alpha = -float('inf')
         beta = float('inf')
+
         value, moves = self.value(board, depth, player, alpha, beta)
+
+        # get appropriate move from movestack
         move = moves[self.half_moves]
         self.half_moves += 2
         return move
 
+# functions for using the ANN model in our framework
 def onehot(i):
     result = [0 for _ in range(13)]
     result[i] = 1
@@ -508,21 +498,26 @@ def multilayer_perceptron(x, weights, biases):
     # Hidden layer with RELU activation
     layer_1 = tf.add(tf.matmul(x, weights['h1']), biases['b1'])
     layer_1 = tf.nn.relu(layer_1)
+
     # Hidden layer with RELU activation
     layer_2 = tf.add(tf.matmul(layer_1, weights['h2']), biases['b2'])
     layer_2 = tf.nn.relu(layer_2)
+
     # Output layer with linear activation
     out_layer = tf.matmul(layer_2, weights['out']) + biases['out']
+
     return out_layer
 
 class GreedyNNPlayer(GreedyPlayer):
+    """
+    GreedyNNPlayer acts like GreedyPlayer, but uses a combination
+    of our standard evaluation function and the ANN's score to 
+    evaluate a certain game state.
+    """
 
     def __init__(self, fen=chess.STARTING_FEN, player=chess.WHITE, book="", directory=""):
         self.board = chess.Board(fen)
-        self.game = chess.pgn.Game()
         self.half_moves = 0
-        self.transposition_matrix = {}
-
         self.value_sign = 1 if player == chess.WHITE else -1
         self.values = { chess.PAWN : 1, 
                 chess.ROOK : 5, 
@@ -531,6 +526,7 @@ class GreedyNNPlayer(GreedyPlayer):
                 chess.QUEEN: 9, 
                 chess.KING : MATE_VALUE }
 
+        # initialize opening books
         if isinstance(book, basestring) and book != "":
             self.initOpeningBook(book)
         elif book == True:
@@ -538,12 +534,15 @@ class GreedyNNPlayer(GreedyPlayer):
         else:
             self.reader = None
 
+        # initialize endgame tbs
         if isinstance(directory, basestring) and directory != "":
             self.initTablebases(directory)
         elif directory == True:
             self.initTablebases()
         else:
             self.tbs = None
+
+        # Restore ANN session
 
         # Network Parameters
         n_hidden_1 = 256 # 1st layer number of features
@@ -576,6 +575,7 @@ class GreedyNNPlayer(GreedyPlayer):
 
         saver.restore(self.sess, "./chess-ann.ckpt")
 
+    # hybrid evaluation function
     def getBoardValue(self, board):
         if board.is_checkmate():
             if board.result() == "1-0":
@@ -595,104 +595,8 @@ class GreedyNNPlayer(GreedyPlayer):
         material = material / 39.0
         position = position / (self.getNumPieces(board) * 50.0)
 
+        # include neural network score
         b = encode(board)
-        assert len(b) == 833
-        nnval = self.sess.run(self.pred, feed_dict = {self.x: [b]}) / 100.0
-        nnweight = 10.0
-
-        result = ((mat_weight * material) + (pos_weight * position) + (nnweight * nnval))
-
-        return result
-
-    def exit(self):
-        if self.reader:
-            self.reader.close()
-        if self.tbs:
-            self.tbs.close()
-        self.sess.close()
-
-class MinMaxNNPlayer(MinimaxPlayer):
-
-    def __init__(self, fen=chess.STARTING_FEN, player=chess.WHITE, book="", directory=""):
-        self.board = chess.Board(fen)
-        self.game = chess.pgn.Game()
-        self.half_moves = 0
-        self.transposition_matrix = {}
-        self.half_moves = 0 if player == chess.WHITE else 1
-        self.calculations = 0
-        self.values = { chess.PAWN : 1, 
-                chess.ROOK : 5, 
-                chess.KNIGHT : 3, 
-                chess.BISHOP : 3, 
-                chess.QUEEN: 9, 
-                chess.KING : MATE_VALUE }
-
-        if isinstance(book, basestring) and book != "":
-            self.initOpeningBook(book)
-        elif book == True:
-            self.initOpeningBook()
-        else:
-            self.reader = None
-
-        if isinstance(directory, basestring) and directory != "":
-            self.initTablebases(directory)
-        elif directory == True:
-            self.initTablebases()
-        else:
-            self.tbs = None
-
-        # Network Parameters
-        n_hidden_1 = 256 # 1st layer number of features
-        n_hidden_2 = 256 # 2nd layer number of features
-        n_input = 833 # Chess position array: 64 squares + board.turn
-        n_classes = 1 # Possible engine scores (-10,000 < score < 10,000)
-
-        # tf Graph input
-        self.x = tf.placeholder("float", [None, n_input])
-        self.y = tf.placeholder("float", [None, n_classes])
-
-        # Store layers weight & bias
-        weights = {
-            'h1': tf.Variable(tf.random_normal([n_input, n_hidden_1])),
-            'h2': tf.Variable(tf.random_normal([n_hidden_1, n_hidden_2])),
-            'out': tf.Variable(tf.random_normal([n_hidden_2, n_classes]))
-        }
-        biases = {
-            'b1': tf.Variable(tf.random_normal([n_hidden_1])),
-            'b2': tf.Variable(tf.random_normal([n_hidden_2])),
-            'out': tf.Variable(tf.random_normal([n_classes]))
-        }
-
-        # Construct model
-        self.pred = multilayer_perceptron(self.x, weights, biases)
-
-        saver = tf.train.Saver()
-
-        self.sess = tf.Session()
-
-        saver.restore(self.sess, "./chess-ann.ckpt")
-
-    def getBoardValue(self, board):
-        if board.is_checkmate():
-            if board.result() == "1-0":
-                return MATE_VALUE
-            else:
-                return -MATE_VALUE
-
-        material, endgame = self.evalMaterial(board)
-
-        # only evaluate position after opening
-        if board.fullmove_number > 5:
-            position = self.evalPosition(board, endgame)
-        else:
-            position = 0.0
-
-        # normalize (to range -1 to 1)
-        material = material / 39.0
-        position = position / (self.getNumPieces(board) * 50.0)
-
-        b = encode(board)
-        assert len(b) == 833
         nnval = self.sess.run(self.pred, feed_dict = {self.x: [b]}) / 100.0
         nnweight = 10.0
 
@@ -708,6 +612,11 @@ class MinMaxNNPlayer(MinimaxPlayer):
         self.sess.close()
 
 class HumanPlayer(ChessPlayer):
+    """
+    HumanPlayer plays whatever move your heart desires, as long 
+    as it's legal! You can use SAN (e.g. Nf3) or UCI (e.g. g1f3)
+    notation.
+    """
 
     def move(self, board):
         legal_moves = list(board.legal_moves)
