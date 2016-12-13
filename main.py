@@ -43,12 +43,16 @@ def play(argv):
     black_book = True
     black_dir = True
 
+
+    # parse the options and complain on error
     try:
         opts, args = getopt.getopt(argv, "hw:b:s:f:", ["white=", "black=", "fen="])
     except getopt.GetoptError:
         print 'Usage: python main.py -w <white/book/dir> -b <black, book, dir> -s <svgfile> -f <fen>'
         print '   Players: Human (hp), Random (rp), Greedy (gp), Minimax (mp), ANN (nn)'
         sys.exit(2)
+
+    # set variables according to options, if necessary
     for opt, arg in opts:
         if opt == '-h':
             print 'python python main.py -w <white/book/dir> -b <black/book/dir> -s <svgfile> -f <fen>'
@@ -83,6 +87,7 @@ def play(argv):
 
     print start_fen
 
+    # create instances of chess agents and play them
     print ""
     if white_type == 'hp':
         print "White Player: Human"
