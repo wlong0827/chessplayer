@@ -79,9 +79,9 @@ class ChessPlayer:
     def printGame(self, board):
         ranks = []
 
-        for rank_index in xrange(8):
-            line = [unicode(rank_index + 1), ' ']
-            for file_index in xrange(8):
+        for rank_index in range(8):
+            line = [str(rank_index + 1), ' ']
+            for file_index in range(8):
                 piece = board.piece_at(chess.square(file_index, rank_index))
 
                 if not piece:
@@ -116,9 +116,9 @@ class ChessPlayer:
 
             #line.append(u"\n")
             ranks.insert(0, ''.join(line))
-        print '\n'.join(ranks)    
+        print('\n'.join(ranks)    )
 
-        print "  a b c d e f g h\n"
+        print("  a b c d e f g h\n")
 
     def exit(self):
         if self.reader:
@@ -313,7 +313,7 @@ class GreedyPlayer(ChessPlayer):
                         chess.KING : MATE_VALUE }
 
         # initialize opening book
-        if isinstance(book, basestring) and book != "":
+        if isinstance(book, str) and book != "":
             self.initOpeningBook(book)
         elif book == True:
             self.initOpeningBook()
@@ -321,7 +321,7 @@ class GreedyPlayer(ChessPlayer):
             self.reader = None
 
         # initialize endgame tbs
-        if isinstance(directory, basestring) and directory != "":
+        if isinstance(directory, str) and directory != "":
             self.initTablebases(directory)
         elif directory == True:
             self.initTablebases()
@@ -369,7 +369,7 @@ class MinimaxPlayer(ChessPlayer):
         self.half_moves = 0 if player == chess.WHITE else 1
 
         # initialize opening book
-        if isinstance(book, basestring) and book != "":
+        if isinstance(book, str) and book != "":
             self.initOpeningBook(book)
         elif book == True:
             self.initOpeningBook()
@@ -377,7 +377,7 @@ class MinimaxPlayer(ChessPlayer):
             self.reader = None
 
         # initialize endgame tbs
-        if isinstance(directory, basestring) and directory != "":
+        if isinstance(directory, str) and directory != "":
             self.initTablebases(directory)
         elif directory == True:
             self.initTablebases()
@@ -527,7 +527,7 @@ class GreedyNNPlayer(GreedyPlayer):
                 chess.KING : MATE_VALUE }
 
         # initialize opening books
-        if isinstance(book, basestring) and book != "":
+        if isinstance(book, str) and book != "":
             self.initOpeningBook(book)
         elif book == True:
             self.initOpeningBook()
@@ -535,7 +535,7 @@ class GreedyNNPlayer(GreedyPlayer):
             self.reader = None
 
         # initialize endgame tbs
-        if isinstance(directory, basestring) and directory != "":
+        if isinstance(directory, str) and directory != "":
             self.initTablebases(directory)
         elif directory == True:
             self.initTablebases()
@@ -626,24 +626,24 @@ class HumanPlayer(ChessPlayer):
                 moves_str += "{}.".format(move)
             else:
                 moves_str += "{}, ".format(move)
-        print moves_str + "\n"
+        print(moves_str + "\n")
         
-        inp = raw_input("Input your move:\n")
+        inp = input("Input your move:\n")
 
         while True:
             try:
                 move = board.parse_uci(inp)
                 if move == chess.Move.null():
-                    inp = raw_input("Illegal move. Try again.\n")
+                    inp = input("Illegal move. Try again.\n")
                     continue
             except ValueError:
                 try:
                     move = board.parse_san(inp)
                     if move == chess.Move.null():
-                        inp = raw_input("Illegal move. Try again.\n")
+                        inp = input("Illegal move. Try again.\n")
                         continue
                 except ValueError:
-                    inp = raw_input("Invalid input. Try again.\n")
+                    inp = input("Invalid input. Try again.\n")
                     continue
 
             break

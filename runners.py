@@ -31,7 +31,7 @@ def playAgents(WhitePlayer, BlackPlayer, debug=False, outfile="", truncate=False
             WhitePlayer.writeBoard(outfile, board)
             call(['open', outfile])
         WhitePlayer.printGame(board)
-        print '\n'
+        print('\n')
         time.sleep(2)
 
     stop_cond = board.is_game_over(claim_draw=True)
@@ -42,15 +42,15 @@ def playAgents(WhitePlayer, BlackPlayer, debug=False, outfile="", truncate=False
 
         if board.turn == chess.WHITE:
             if debug:
-                print "Move:", board.fullmove_number
+                print("Move:", board.fullmove_number)
             move = WhitePlayer.move(board)
             if debug:
-                print "White's move: {}".format(move)
+                print("White's move: {}".format(move))
             board.push(move)
         else:
             move = BlackPlayer.move(board)
             if debug:
-                print "Black's move: {}".format(move)
+                print("Black's move: {}".format(move))
             board.push(move)
 
         if debug:
@@ -58,7 +58,7 @@ def playAgents(WhitePlayer, BlackPlayer, debug=False, outfile="", truncate=False
                 WhitePlayer.writeBoard(outfile, board)
                 call(['open', outfile])
             WhitePlayer.printGame(board)
-            print '\n'
+            print('\n')
             time.sleep(2)
 
         stop_cond = board.is_game_over(claim_draw=True)
@@ -75,8 +75,8 @@ def playAgents(WhitePlayer, BlackPlayer, debug=False, outfile="", truncate=False
         result = "1/2-1/2"
 
     if debug:
-        print result
-        print chess.pgn.Game.from_board(board)
+        print(result)
+        print(chess.pgn.Game.from_board(board))
 
     for player in [WhitePlayer, BlackPlayer]:
         player.board.reset()
@@ -105,8 +105,12 @@ def playAgents(WhitePlayer, BlackPlayer, debug=False, outfile="", truncate=False
     records winner based on evaluation function (perhaps useful
     for faster testing).
 """
-def calcStats((white1, black1), (white2, black2),
+def calcStats(white_tuple, black_tuple,
                 games_per_side, log=False, trunc=False):
+
+    white1, black1 = white_tuple
+    white2, black2 = black_tuple
+
     if log:
         logfile = open('/Users/jwbaskerv/Desktop/ResultsLog.txt', 'a')
         logfile.write("Running Tests: {} vs {}\n".format(white1, black1))
